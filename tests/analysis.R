@@ -270,6 +270,7 @@ dev.off()
 
 load('../ready2model_simple.RData')
 
+devtools::load_all()
 logspeeds = tt.trip.link$logspeed
 timeBins = tt.trip.link$timeBins
 linkIds = tt.trip.link$linkidrel

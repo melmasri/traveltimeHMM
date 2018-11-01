@@ -175,7 +175,7 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L, model = 
         
         ## Calculating || ThetaNew - Theta ||
         iter_error = error(c(drop(init), drop(tmat), drop(mu_speed), drop(var_speed), E),
-            c(drop(initNew), drop(tmatNew), drop(mu_speedNew), drop(var_speedNew, E_new)))
+            c(drop(initNew), drop(tmatNew), drop(mu_speedNew), drop(var_speedNew), E_new))
 
         ## re-positioning parameters
         tmat <- tmatNew
