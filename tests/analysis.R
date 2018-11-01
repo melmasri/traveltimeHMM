@@ -1,8 +1,8 @@
 rm(list=ls())
 library(data.table)
-load('ready2model.RData')
-source('2_woodard.R')
-source('support_functions.R')
+load('../ready2model_simple.RData')
+
+devtools::load_all()
 
 predict.traveltime<-function(object, linkIds, len, starttime,  n=1000){
     if(object$model =='no-dependence')
