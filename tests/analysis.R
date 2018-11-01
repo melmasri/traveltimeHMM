@@ -268,3 +268,21 @@ lines(density(predict.traveltime.HMM(est, linkids,len, starttime = stime,n =5000
 dev.off()
 
 
+load('../ready2model_simple.RData')
+
+logspeeds = tt.trip.link$logspeed
+timeBins = tt.trip.link$timeBins
+linkIds = tt.trip.link$linkidrel
+trips = tt.trip.link$trip
+nQ = 2
+model = 'trip-HMM'
+tolErr = 1
+L = 10
+max_iter = 40
+set.seed(123)
+
+est = traveltimeHMM(logspeeds, trip, timeBins, linkIds, nQ = 2, model = 'trip-HMM', max_iter =50)
+
+
+
+

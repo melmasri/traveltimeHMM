@@ -23,6 +23,6 @@ gaussian_param_by_factor <- function(speeds, byFactor, states = NULL) {
     
     mean = sumSpeed/sumStates
     sig = sumSpeed2/sumStates - mean^2
-    list(mean = matrix(mean, ncol = nQ, byrow = TRUE), sigma = matrix(pmax(sig, 0), 
-        ncol = nQ, byrow = TRUE))
+    list(mean = matrix(mean, ncol = nQ, byrow = TRUE),
+         sigma = matrix(pmax(sig, 1e-10), ncol = nQ, byrow = TRUE))
 }

@@ -52,7 +52,8 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L, model = 
     ## ################################################## Factors and sets
     timeFactor = interaction(timeBins, lex.order = TRUE)
     linkTimeFactor = interaction(linkIds, timeBins, lex.order = TRUE)  # factor of link id and time bin, ordered by lex.
-    paramId = as.numeric(linkTimeFactor)
+    obsId = as.numeric(linkTimeFactor)
+    tripId = as.numeric(trips)
     nFactors = sapply(split(1:nObs, linkTimeFactor), length)
     
     ## which links (factors) with less than L
@@ -75,18 +76,21 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L, model = 
     index_only_init = sapply(gsub("[0-9.]+", "", names(only_init)),
         function(r) which(r == levels(timeFactor)))
     
-    ## ################################################## Storage variables Gaussian
-    ## parameter matrices
+    ## #-------------------------------------------------- variable holders
+    ## speed variables
     mu_speed = matrix(1:nQ - 1, ncol = nQ, nrow = nB * nlinks, byrow = TRUE)
     var_speed = matrix(1:nQ, ncol = nQ, nrow = nB * nlinks, byrow = TRUE)
     
     ## markov transition matrices and initial states per link
     tmat = matrix(rep(rep(1, nQ)/nQ, each = nQ), nrow = nB * nlinks, ncol = nQ2, byrow = TRUE)
     init = matrix(rep(1, nQ)/nQ, nrow = nB * nlinks, ncol = nQ, byrow = TRUE)
-    
+
+    ## Trip-effect 
+    tau2 = 1
+    if(model == 'trip-HMM') E <- rnorm(nTrips, 0, sqrt(tau2)) else E <- numeric(nTrips)
     ## Empyt variables
-    probStates <- mu_speedNew <- var_speedNew <- meanSigAverage <- NULL
-    
+    initNew <- tmatNew <- probStates <- mu_speedNew <- var_speedNew <- NULL
+    E_new = 0
     error <- function(A, B) if (is.null(A) || is.null(B)) 0 else sum(abs(A - B))
 
     ## #--------------------------------------------------
@@ -99,10 +103,10 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L, model = 
     repeat {
         ## forward-backward
         if (grepl("HMM", model)) {
-            probTran = tmat[paramId, ] * pmax(dnorm(logspeeds,
-                mu_speed[paramId,], var_speed[paramId, ]), 0.001)[, rep(1:nQ, nQ)]
+            probTran = tmat[obsId, ] * pmax(dnorm(logspeeds,
+                mu_speed[obsId,], var_speed[obsId, ]), 0.001)[, rep(1:nQ, nQ)]
             fb = tapply(1:nObs, trips, function(r)
-                forwardback(probTran[r,], init[paramId[r[1]], ]))
+                forwardback(probTran[r,], init[obsId[r[1]], ]))
             
             ## probability of each state per observation
             alpha = matrix(unlist(lapply(fb, function(r) r$alpha), use.names = FALSE), 
@@ -135,15 +139,12 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L, model = 
         }
         
         ## calculating mean and variance of gaussian
-        meanSig = gaussian_param_by_factor(logspeeds, linkTimeFactor, probStates)
-        
+        meanSig = gaussian_param_by_factor(logspeeds - E[tripId], linkTimeFactor, probStates)
         ## getting states with less than L factors
         if (!is.null(indexLinksLessMinObs)) {
-            meanSigAverage = gaussian_param_by_factor(logspeeds, timeFactor, probStates)
-            meanSig$mean[linksLessMinObs, ] = meanSigAverage$mean[indexLinksLessMinObs, 
-                ]
-            meanSig$sigma[linksLessMinObs, ] = meanSigAverage$sigma[indexLinksLessMinObs, 
-                ]
+            meanSigAverage = gaussian_param_by_factor(logspeeds - E[tripId], timeFactor, probStates)
+            meanSig$mean[linksLessMinObs, ] = meanSigAverage$mean[indexLinksLessMinObs, ]
+            meanSig$sigma[linksLessMinObs, ] = meanSigAverage$sigma[indexLinksLessMinObs, ]
         }
         
         ## sorting mean of Gaussian parameter to make the HMM states identifiable
@@ -157,21 +158,37 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L, model = 
                 ord$order[r, ]], USE.NAMES = FALSE))
         }
         
-        ## Calculating || ThetaNew - Theta ||
-        iter_error = error(c(drop(init), drop(tmat), drop(mu_speed), drop(var_speed)),
-            c(drop(initNew), drop(tmatNew), drop(mu_speedNew), drop(var_speedNew)))
+
+        ## Calculating E-effect (trip specific effect parameters)
+        if(model == "trip-HMM"){
+            ## Calculating E-trip variance
+            tau2 <- .colSums(E^2, m = nTrips, n=1)/nTrips
+
+            ## Updaing E-trip per trip
+            dummy <- probStates/var_speedNew[obsId,]
+            a <- .rowSums(dummy, m = nObs, n = nQ)
+            h <- .rowSums(dummy * mu_speedNew[obsId,], m = nObs, n = nQ)
+            dummy1 <- vapply(split(logspeeds * a - h, trips), function(r) .colSums(r, m = length(r), n=1), numeric(1), USE.NAMES = FALSE)
+            dummy2 <- vapply(split(a, trips), function(r) .colSums(r, m = length(r), n=1), numeric(1), USE.NAMES = FALSE)
+            E_new <-  dummy1 / (1/tau2 + dummy2)
+        }
         
+        ## Calculating || ThetaNew - Theta ||
+        iter_error = error(c(drop(init), drop(tmat), drop(mu_speed), drop(var_speed), E),
+            c(drop(initNew), drop(tmatNew), drop(mu_speedNew), drop(var_speedNew, E_new)))
+
         ## re-positioning parameters
         tmat <- tmatNew
         init <- initNew
         mu_speed <- mu_speedNew
         var_speed <- var_speedNew
+        E <- E_new
         iter <- iter + 1
         
-        print(paste(round(iter_error, 3),
-                    "error in iteration", iter, " @",
-                    format(Sys.time() - tstart)))
-        
+        cat(round(iter_error,2), "error in iteration", iter, "@",
+            format(Sys.time() - tstart, digits = 3), fill=TRUE)
+
+                
         ## breaking loop on convergence
         if (iter_error <= tolErr) {
             print(paste("Parameters converged at iteration ", iter-1))
@@ -189,6 +206,8 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L, model = 
                    init = init,
                    sd = sqrt(var_speed),
                    mean = mu_speed,
+                   tau  = sqrt(tau2),
+                   E = E,
                    nQ = nQ,
                    nB = nB,
                    nObs = nObs,
