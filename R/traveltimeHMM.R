@@ -1,27 +1,28 @@
-#' Commputes initial state probabilites 
-#' \code{initial_est} return the state probabilities for each level in the passed \by{by_factor}.
+#' \code{traveltimeHMM} estimates trips and link specific speed parameters from observed average speeds per unique trip and link.
 #'
-#' @param logspeeds 
-#' @param trips
-#' @param timeBins
-#' @param linkIds
-#' @param nQ Integer number of states
-#' @param model 
-#' @param max_iter
-#' @param L
-#' @param verbose
+#' @param speeds A numeric vector of speed observations on the log-scale.
+#' @param trips An integer of character vector of trip ids of the same size as \code{speed}.
+#' @param timeBins A character vector of time bins for each observation of \code{speed}.
+#' @param linkIds A vector of link ids (route or way) for each observation of \code{speed}.
+#' @param nQ Integer number of states, default is \code{1}.
+#' @param model Type of model as string, \code{trip-HMM} (defualt) to use a hidden Markov model (HMM) with trip effect, \code{HMM} is an HMM without trip effect,
+#' \code{trip} is trip effect model without HMM, and \code{no-dependence} is model with link specific parameter only without an HMM nor a trip effect.
+#' @param maxIter An Integer for the maximum number of iterations to run for, default = \code{NULL}.
+#' @param L An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the paramter for, \code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.
+#' @param verbose logical (\code{default = FALSE}); indicating whether to a summary statistics of the data, and extra details.
 #'
-#' @return 
+#' @details NULL
+#' 
+#' @return  NULL
 #'
 #' @examples
 #' \dontrun{
 #' }
-
-traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L, model = c("HMM", 
-    "trip-HMM", "no-dependence"), tolErr = 1, L = 10, max_iter = NULL, verbose = TRUE) {
+traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("HMM", 
+    "trip-HMM","trip","no-dependence"), tolErr = 10, L = 10, maxIter = NULL, verbose = FALSE) {
 
     ## #-------------------------------------------------- Testing requirements
-    if (length(logspeeds) != length(trips) || length(logspeeds) != length(timeBins)) 
+    if (length(speeds) != length(trips) || length(speeds) != length(timeBins)) 
         stop("Variabels logspeds, trips and timeBins are not equal in length!")
     
     if (!is.factor(trips)) 
@@ -32,27 +33,32 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L, model = 
     
     ## #-------------------------------------------------- warnings for user
     maxSpeed = 130  # max speed km/h
-    aux = which(logspeeds > log(maxSpeed/3.6))
+    aux = which(speeds > log(maxSpeed/3.6))
     if (length(aux) > 0) 
         warning(paste("Many observations are higher than speed limit (130km/h)!, about", 
-            paste0(round(100 * length(aux)/length(logspeeds), 2), "% of observations."), 
+            paste0(round(100 * length(aux)/length(speeds), 2), "% of observations."), 
             " It is advised to remove these observations"))
     
-    ## ################################################## Setup
     model <- match.arg(model)
     if (grepl("HMM", model) & nQ <= 1) 
         stop("Cannot use Hidden Markov Model with < 2 states!")
+    if(!grepl('HMM', model) & nQ > 1){
+        warning('Cannot use nQ > 1 without an HMM, resetting nQ = 1', immediate.=TRUE, call.=FALSE)
+        nQ =1
+    }
 
+    ## #-------------------------------------------------- setup
     nB <- length(unique(timeBins))  # time bins
     nQ2 <- nQ^2
-    nObs <- length(logspeeds)
+    nObs <- length(speeds)
     nlinks <- nlevels(linkIds)  # number of links
     nTrips <- nlevels(trips)
     
     ## ################################################## Factors and sets
     timeFactor = interaction(timeBins, lex.order = TRUE)
     linkTimeFactor = interaction(linkIds, timeBins, lex.order = TRUE)  # factor of link id and time bin, ordered by lex.
-    paramId = as.numeric(linkTimeFactor)
+    obsId = as.numeric(linkTimeFactor)
+    tripId = as.numeric(trips)
     nFactors = sapply(split(1:nObs, linkTimeFactor), length)
     
     ## which links (factors) with less than L
@@ -72,37 +78,40 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L, model = 
     ## finding the number of factors (link x timeBin) that have only initial states,
     ## i.e cannot compute P(state_{k-1}, state_k | Obs})
     only_init = which(sapply(split(1:nObs, linkTimeFactor), length) == count_init)
-    index_only_init = sapply(gsub("[0-9.]+", "", names(only_init)),
-        function(r) which(r == levels(timeFactor)))
+    index_only_init = sapply(gsub("[0-9.]+", "", names(only_init)),function(r) which(r == levels(timeFactor)))
     
-    ## ################################################## Storage variables Gaussian
-    ## parameter matrices
+    ## #-------------------------------------------------- variable holders
+    ## speed variables
     mu_speed = matrix(1:nQ - 1, ncol = nQ, nrow = nB * nlinks, byrow = TRUE)
     var_speed = matrix(1:nQ, ncol = nQ, nrow = nB * nlinks, byrow = TRUE)
     
     ## markov transition matrices and initial states per link
     tmat = matrix(rep(rep(1, nQ)/nQ, each = nQ), nrow = nB * nlinks, ncol = nQ2, byrow = TRUE)
     init = matrix(rep(1, nQ)/nQ, nrow = nB * nlinks, ncol = nQ, byrow = TRUE)
-    
-    ## Empyt variables
-    probStates <- mu_speedNew <- var_speedNew <- meanSigAverage <- NULL
-    
-    error <- function(A, B) if (is.null(A) || is.null(B)) 0 else sum(abs(A - B))
 
+    ## Trip-effect 
+    tau2 = 1
+    if(grepl('trip', model)) E <- rnorm(nTrips, 0, sqrt(tau2)) else E <- numeric(nTrips)
+    ## Empyt variables
+    initNew <- tmatNew <- mu_speedNew <- var_speedNew <- NULL
+    E_new <- E
+    probStates <- NULL
+    ## Error function
+    error <- function(A, B) if (is.null(A) || is.null(B)) 0 else sum(abs(A - B))
     ## #--------------------------------------------------
     ## Start of simulation
 
     ## Parameter estimation
     iter = 0  # iteration count
     tstart = Sys.time()  # starting time
-    print(paste("model is :", model))
+    cat("Running model", model, fill=TRUE)
     repeat {
         ## forward-backward
         if (grepl("HMM", model)) {
-            probTran = tmat[paramId, ] * pmax(dnorm(logspeeds,
-                mu_speed[paramId,], var_speed[paramId, ]), 0.001)[, rep(1:nQ, nQ)]
+            probTran = tmat[obsId, ] * pmax(dnorm(speeds,
+                mu_speed[obsId,], var_speed[obsId, ]), 0.001)[, rep(1:nQ, nQ)]
             fb = tapply(1:nObs, trips, function(r)
-                forwardback(probTran[r,], init[paramId[r[1]], ]))
+                forwardback(probTran[r,], init[obsId[r[1]], ]))
             
             ## probability of each state per observation
             alpha = matrix(unlist(lapply(fb, function(r) r$alpha), use.names = FALSE), 
@@ -135,15 +144,12 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L, model = 
         }
         
         ## calculating mean and variance of gaussian
-        meanSig = gaussian_param_by_factor(logspeeds, linkTimeFactor, probStates)
-        
+        meanSig = gaussian_param_by_factor(speeds - E[tripId], linkTimeFactor, probStates)
         ## getting states with less than L factors
         if (!is.null(indexLinksLessMinObs)) {
-            meanSigAverage = gaussian_param_by_factor(logspeeds, timeFactor, probStates)
-            meanSig$mean[linksLessMinObs, ] = meanSigAverage$mean[indexLinksLessMinObs, 
-                ]
-            meanSig$sigma[linksLessMinObs, ] = meanSigAverage$sigma[indexLinksLessMinObs, 
-                ]
+            meanSigAverage = gaussian_param_by_factor(speeds - E[tripId], timeFactor, probStates)
+            meanSig$mean[linksLessMinObs, ] = meanSigAverage$mean[indexLinksLessMinObs, ]
+            meanSig$sigma[linksLessMinObs, ] = meanSigAverage$sigma[indexLinksLessMinObs, ]
         }
         
         ## sorting mean of Gaussian parameter to make the HMM states identifiable
@@ -157,28 +163,49 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L, model = 
                 ord$order[r, ]], USE.NAMES = FALSE))
         }
         
-        ## Calculating || ThetaNew - Theta ||
-        iter_error = error(c(drop(init), drop(tmat), drop(mu_speed), drop(var_speed)),
-            c(drop(initNew), drop(tmatNew), drop(mu_speedNew), drop(var_speedNew)))
+
+        ## Calculating E-effect (trip specific effect parameters)
+        if(grepl('trip', model)){
+            ## Calculating E-trip variance
+            tau2 <- .colSums(E^2, m = nTrips, n=1)/nTrips
+
+            ## Updaing E-trip per trip
+            dummy <- if(is.null(probStates)) 1/var_speedNew[obsId,] else  probStates/var_speedNew[obsId,]
+            a <- .rowSums(dummy, m = nObs, n = nQ)
+            h <- .rowSums(dummy * mu_speedNew[obsId,], m = nObs, n = nQ)
+            dummy1 <- vapply(split(speeds * a - h, trips), function(r) .colSums(r, m = length(r), n=1), numeric(1), USE.NAMES = FALSE)
+            dummy2 <- vapply(split(a, trips), function(r) .colSums(r, m = length(r), n=1), numeric(1), USE.NAMES = FALSE)
+            E_new <-  dummy1 / (1/tau2 + dummy2)
+        }
         
+        ## Calculating || ThetaNew - Theta ||
+        A = c(mu_speed, var_speed)
+        B = c(mu_speedNew, var_speedNew)
+        if(grepl('HMM', model)){ A = c(A, init, tmat); B = c(B, initNew, tmatNew)}
+        if(grepl('trip',model)) { A = c(A, E); B = c(B,E_new)}
+        iter_error = error(A, B)
+
         ## re-positioning parameters
         tmat <- tmatNew
         init <- initNew
         mu_speed <- mu_speedNew
         var_speed <- var_speedNew
+        E <- E_new
         iter <- iter + 1
-        
-        print(paste(round(iter_error, 3),
-                    "error in iteration", iter, " @",
-                    format(Sys.time() - tstart)))
-        
+
+        if(!is.null(maxIter) && iter==1)
+            cat('Expected completion of', maxIter, 'iterations in', format((maxIter-1) * (Sys.time() - tstart), digits = 3), fill=TRUE)
+
+        cat(round(iter_error,2), "error in iteration", iter, "@", format(Sys.time() - tstart, digits = 3), fill=TRUE)
+
+                
         ## breaking loop on convergence
         if (iter_error <= tolErr) {
-            print(paste("Parameters converged at iteration ", iter-1))
+            cat("Parameters converged at iteration" , iter-1, fill=TRUE)
             break
         }
-        if (!is.null(max_iter) && iter >= max_iter) {
-            print("Reached maximum number of iterations")
+        if (!is.null(maxIter) && iter >= maxIter) {
+            cat("Reached maximum number of iterations", fill=TRUE)
             break
         }
     }
@@ -189,6 +216,8 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L, model = 
                    init = init,
                    sd = sqrt(var_speed),
                    mean = mu_speed,
+                   tau  = sqrt(tau2),
+                   E = E,
                    nQ = nQ,
                    nB = nB,
                    nObs = nObs,
