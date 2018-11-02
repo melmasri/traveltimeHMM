@@ -296,3 +296,11 @@ est = traveltimeHMM(logspeeds, trips, timeBins, linkIds, model = 'trip', nQ = 3)
 
 hist(exp(est$E), freq=FALSE)
 lines(density(exp(est$E)), lwd=2, col='blue')
+
+
+##
+obs  = tt.trip.link[trip %in% test.trips, .(obsTT = sum(tt), timeBins=timeBins[1], len = sum(length)), by=trip]
+
+pred = tt.trip.link[trip %in% test.trips, .(predTT= predict.traveltime(est, linkidrel, length,time[1])), by=trip]
+
+analyze.prediction(pred, obs)
