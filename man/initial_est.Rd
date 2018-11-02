@@ -2,8 +2,7 @@
 % Please edit documentation in R/hmm_estimates.R
 \name{initial_est}
 \alias{initial_est}
-\title{Commputes initial state probabilites 
-\code{initial_est} return the state probabilities for each level in the passed \by{by_factor}.}
+\title{Commputes initial state probabilites}
 \usage{
 initial_est(state_prob, by_factor, subset = NULL)
 }
@@ -18,13 +17,10 @@ initial_est(state_prob, by_factor, subset = NULL)
 An \code{m x Q} matrix of probabilites for the m levels of \code{by_factor}.
 }
 \description{
-Commputes initial state probabilites 
-\code{initial_est} return the state probabilities for each level in the passed \by{by_factor}.
+\code{initial_est} return the state probabilities for each level in the passed \code{by_factor}.
 }
 \examples{
-\dontrun{
 x = runif(10)
 x = cbind(x, 1-x)
 initial_est(x, factor(sample(c("A", "B"), 10, replace=TRUE)))
-}
 }

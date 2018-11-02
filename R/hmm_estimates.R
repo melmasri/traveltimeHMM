@@ -1,18 +1,20 @@
 #' Commputes initial state probabilites 
-#' \code{initial_est} return the state probabilities for each level in the passed \by{by_factor}.
+#'
+#' \code{initial_est} return the state probabilities for each level in the passed \code{by_factor}.
 #'
 #' @param state_prob An \code{n x Q} martrix of initial state probabilities for \code{n} observations and \code{Q} states
 #' @param by_factor A vector of factors of size \code{n} (a factor for each row of \code{state_prob}).
 #' @param subset A vector indexing the rows of \code{state_prob} for which states probabilities are computed using only this subset, defualt is \code{NULL}
 #'
+#' @details NULL
+#' 
 #' @return An \code{m x Q} matrix of probabilites for the m levels of \code{by_factor}.
 #'
+#' 
 #' @examples
-#' \dontrun{
 #' x = runif(10)
 #' x = cbind(x, 1-x)
 #' initial_est(x, factor(sample(c("A", "B"), 10, replace=TRUE)))
-#' }
 initial_est <- function(state_prob, by_factor, subset=NULL) {
     if(!is.matrix(state_prob))
         stop('state_prob is not a matrix!')
@@ -36,6 +38,7 @@ initial_est <- function(state_prob, by_factor, subset=NULL) {
 
 
 #' @describeIn Commputes transition matrix probabilities
+#'
 #' \code{tmat_est} return transition state probabilities for each level in the passed \by{by_factor}.
 #'
 #' @param joint_prob An \code{n x Q} martrix of initial state probabilities for \code{n} observations and \code{Q} states
@@ -49,7 +52,6 @@ initial_est <- function(state_prob, by_factor, subset=NULL) {
 #' @examples
 #' \dontrun{
 #' }
-
 tmat_est <- function(joint_prob,state_prob, init_ids, by_factor){
     nQ <- ncol(state_prob)
     nQ2 <- nQ^2

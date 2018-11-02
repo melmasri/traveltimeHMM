@@ -2,28 +2,34 @@
 % Please edit documentation in R/traveltimeHMM.R
 \name{traveltimeHMM}
 \alias{traveltimeHMM}
-\title{Commputes initial state probabilites 
-\code{initial_est} return the state probabilities for each level in the passed \by{by_factor}.}
+\title{\code{traveltimeHMM} estimates trips and link specific speed parameters from observed average speeds per unique trip and link.}
 \usage{
-traveltimeHMM(logspeeds, trips, timeBins, linkIds, nQ = 1L,
-  model = c("HMM", "trip-HMM", "no-dependence"), tolErr = 1, L = 10,
-  max_iter = NULL, verbose = TRUE)
+traveltimeHMM(speeds, trips, timeBins, linkIds, nQ = 1L,
+  model = c("HMM", "trip-HMM", "trip", "no-dependence"), tolErr = 10,
+  L = 10, maxIter = NULL, verbose = FALSE)
 }
 \arguments{
-\item{logspeeds}{}
+\item{speeds}{A numeric vector of speed observations on the log-scale.}
 
-\item{nQ}{Integer number of states}
+\item{trips}{An integer of character vector of trip ids of the same size as \code{speed}.}
 
-\item{model}{}
+\item{timeBins}{A character vector of time bins for each observation of \code{speed}.}
 
-\item{verbose}{}
-}
-\value{
+\item{linkIds}{A vector of link ids (route or way) for each observation of \code{speed}.}
 
+\item{nQ}{Integer number of states, default is \code{1}.}
+
+\item{model}{Type of model as string, \code{trip-HMM} (defualt) to use a hidden Markov model (HMM) with trip effect, \code{HMM} is an HMM without trip effect,
+\code{trip} is trip effect model without HMM, and \code{no-dependence} is model with link specific parameter only without an HMM nor a trip effect.}
+
+\item{L}{An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the paramter for, \code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.}
+
+\item{maxIter}{An Integer for the maximum number of iterations to run for, default = \code{NULL}.}
+
+\item{verbose}{logical (\code{default = FALSE}); indicating whether to a summary statistics of the data, and extra details.}
 }
 \description{
-Commputes initial state probabilites 
-\code{initial_est} return the state probabilities for each level in the passed \by{by_factor}.
+\code{traveltimeHMM} estimates trips and link specific speed parameters from observed average speeds per unique trip and link.
 }
 \examples{
 \dontrun{
