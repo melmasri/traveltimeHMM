@@ -4,34 +4,6 @@ load('../ready2model_simple.RData')
 
 devtools::load_all()
 
-predict.traveltime<-function(object, linkIds, len, starttime,  n=1000){
-    if(object$model =='no-dependence')
-        return(predict.traveltime.no_dependence(object, linkIds, len , starttime, n))
-
-    if(object$model == 'HMM')
-        return(predict.traveltime.HMM(object, linkIds, len, starttime, n))
-}
-
-predict.traveltime.no_dependence<-function(object, linkIds, len, starttime,  n=1000){
-    if(object$model !='no-dependence')
-        stop('Object model is not no-dependence')
-    fact = paste(linkIds[1],time_bins(starttime),sep= '.')
-    id = which(levels(object$factors)==fact)
-    nInd = 1:n
-    speed = rnorm(n, object$mean[id,], object$sd[id,])
-    tt  = len[1] * exp(-speed)
-    for(k in 2:length(linkIds)){
-        fact = paste(linkIds[k], time_bins(starttime + tt),sep='.')
-        uni.fact = table(fact)
-        id = sapply(names(uni.fact), function(s) which(levels(object$factors) == s))
-        matching = pmatch(fact, names(uni.fact), dup=TRUE) 
-        speed = rnorm(n, object$mean[id[matching],], object$sd[id[matching],])
-        tt  = tt + len[k] * exp(-speed)
-    }
-    tt
-}
-
-
 analyze.prediction<-function(pred, obs, file = NULL,plot=TRUE, ...){
     dt = merge(pred, obs, by='trip')
     pointEst = dt[, .(
@@ -270,16 +242,20 @@ dev.off()
 
 load('../ready2model_simple.RData')
 
+library(data.table)
+load('ready2model.RData')
 devtools::load_all()
 rm(list=ls())
-library(data.table)
+
 load('ready2model_simple.RData')
 
 devtools::load_all()
 
-logspeeds = tt.trip.link$logspeed
-timeBins = tt.trip.link$timeBins
-linkIds = tt.trip.link$linkidrel
+aux = which(tt.trip.link$trip==test.trips[1])
+logspeeds = tt.trip.link$logspeed[aux]
+timeBins = tt.trip.link$timeBins[aux]
+linkIds = tt.trip.link$linkidrel[aux]
+len = tt.trip.link$length[aux]
 trips = tt.trip.link$trip
 nQ = 2
 model = 'trip-HMM'
@@ -303,4 +279,10 @@ obs  = tt.trip.link[trip %in% test.trips, .(obsTT = sum(tt), timeBins=timeBins[1
 
 pred = tt.trip.link[trip %in% test.trips, .(predTT= predict.traveltime(est, linkidrel, length,time[1])), by=trip]
 
-analyze.prediction(pred, obs)
+aux = analyze.prediction(pred, obs)
+
+write.csv(aux$empirical.coverage, file='woodard_trip-HMM_empirical-coverge.csv')
+write.csv(aux$interval.width, file='woodard_trip-HMM_interval-width.csv')
+
+
+

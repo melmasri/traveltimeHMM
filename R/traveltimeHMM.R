@@ -25,12 +25,6 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
     if (length(speeds) != length(trips) || length(speeds) != length(timeBins)) 
         stop("Variabels logspeds, trips and timeBins are not equal in length!")
     
-    if (!is.factor(trips)) 
-        trips = factor(trips) 
-    
-    if (!is.factor(linkIds)) 
-        linkIds = factor(linkIds)
-    
     ## #-------------------------------------------------- warnings for user
     maxSpeed = 130  # max speed km/h
     aux = which(speeds > log(maxSpeed/3.6))
@@ -48,6 +42,12 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
     }
 
     ## #-------------------------------------------------- setup
+    if (!is.factor(trips)) 
+        trips = factor(trips) 
+    
+    if (!is.factor(linkIds)) 
+        linkIds = factor(linkIds)
+    
     nB <- length(unique(timeBins))  # time bins
     nQ2 <- nQ^2
     nObs <- length(speeds)

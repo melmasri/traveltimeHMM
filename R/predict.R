@@ -13,7 +13,7 @@ predict.traveltime<-function(object, linkIds, len, starttime,  n=1000){
 predict.traveltime.no_dependence <- function(object, linkIds, len, starttime, n = 1000) {
      ## sampling E (trip-effect)
     if(grepl('trip', object$model))
-        E = rnorm(n, mu=0, sd = est$tau) else E = 0
+        E = rnorm(n, mean = 0, sd = est$tau) else E = 0
     
     fact = paste(linkIds[1], time_bins(starttime), sep = ".")
     id = which(levels(object$factors) == fact)
