@@ -19,7 +19,7 @@
 #' \dontrun{
 #' }
 traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("HMM", 
-    "trip-HMM","trip","no-dependence"), tolErr = 10, L = 10, maxIter = NULL, verbose = FALSE) {
+    "trip-HMM","trip","no-dependence"), tolErr = 10, L = 10, maxIter = NULL, verbose = FALSE, ...) {
 
     ## #-------------------------------------------------- Testing requirements
     if (length(speeds) != length(trips) || length(speeds) != length(timeBins)) 
@@ -34,6 +34,7 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
             " It is advised to remove these observations"))
     
     model <- match.arg(model)
+    param <- list(...)
     if (grepl("HMM", model) & nQ <= 1) 
         stop("Cannot use Hidden Markov Model with < 2 states!")
     if(!grepl('HMM', model) & nQ > 1){
@@ -85,10 +86,34 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
     mu_speed = matrix(1:nQ - 1, ncol = nQ, nrow = nB * nlinks, byrow = TRUE)
     var_speed = matrix(1:nQ, ncol = nQ, nrow = nB * nlinks, byrow = TRUE)
     
-    ## markov transition matrices and initial states per link
-    tmat = matrix(rep(rep(1, nQ)/nQ, each = nQ), nrow = nB * nlinks, ncol = nQ2, byrow = TRUE)
-    init = matrix(rep(1, nQ)/nQ, nrow = nB * nlinks, ncol = nQ, byrow = TRUE)
-
+    ## Markov transition matrices and initial states per link
+    ## default initial values
+    init.0 <- rep(1,nQ)/nQ
+    tmat.0 <-rep(rep(1, nQ)/nQ, nQ)
+    ## sampling initial values if seed is passed
+    if(!is.null(param$seed) && is.numeric(param$seed)){
+        init.0 <- runif(nQ)
+        init.0 <- init.0/sum(init.0)
+        tmat.0 <- matrix(runif(nQ^2), nQ, nQ)
+        tmat.0 <- c(t(tmat.0/rowSums(tmat.0)))
+    }
+    ## setting initial values if optional parameters are passed
+    if(!is.null(param$tmat)){
+        if(is.matrix(param$tmat) && dim(param$tmat) == c(nQ, nQ) && rowSums(param$tmat) == c(1,1)){
+            tmat.0 <- c(t(param$tmat))
+        }else
+            warning('Initial transition values are not used, tmat must be nQ x nQ with rows summing to 1', immediate.=TRUE, call.=FALSE)
+    }
+    if(!is.null(param$init)){
+        if(length(param$init) == nQ && sum(param$init) == 1){
+            init.0 <- param$init
+        }else
+            warning('Initial state values are not used, init must be of length nQ and sum to 1', immediate.=TRUE, call.=FALSE)
+    }
+    ## creating initial matrices from inital values
+    init <- matrix(init.0, nrow = nB * nlinks, ncol = nQ, byrow = TRUE)
+    tmat <- matrix(tmat.0, nrow = nB * nlinks, ncol = nQ2, byrow = TRUE)
+    
     ## Trip-effect 
     tau2 = 1
     if(grepl('trip', model)) E <- rnorm(nTrips, 0, sqrt(tau2)) else E <- numeric(nTrips)

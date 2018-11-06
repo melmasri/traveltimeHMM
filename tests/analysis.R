@@ -286,3 +286,5 @@ write.csv(aux$interval.width, file='woodard_trip-HMM_interval-width.csv')
 
 
 
+
+
