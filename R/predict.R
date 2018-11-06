@@ -1,16 +1,17 @@
 
 predict.traveltime<-function(object, linkIds, len, starttime,  n=1000){
-    if(object$model =='no-dependence')
+    if(object$model == 'no-dependence')
         return(predict.traveltime.no_dependence(object, linkIds, len , starttime, n))
-
+    
+    if(object$model =='trip')
+        return(predict.traveltime.no_dependence(object, linkIds, len , starttime, n))
+    
     if(grepl('HMM', object$model))
         return(predict.traveltime.HMM(object, linkIds, len, starttime, n))
 }
 
 predict.traveltime.no_dependence <- function(object, linkIds, len, starttime, n = 1000) {
-    if (object$model != "no-dependence") 
-        stop("Object model is not no-dependence")
-    ## sampling E (trip-effect)
+     ## sampling E (trip-effect)
     if(grepl('trip', object$model))
         E = rnorm(n, mu=0, sd = est$tau) else E = 0
     
@@ -19,13 +20,10 @@ predict.traveltime.no_dependence <- function(object, linkIds, len, starttime, n 
     speed = rnorm(n, object$mean[id, ], object$sd[id, ])
     tt = len[1] * exp(-speed - E)
     for (k in 2:length(linkIds)) {
-        fact = paste(linkIds[k], time_bins(starttime + tt), sep = ".")
-        if (length(unique(fact)) == 1) {
-            id = which(levels(object$factors) == fact[1])
-        } else {
-            id = sapply(fact, function(s) which(levels(object$factors) == s))
-        }
-        speed = rnorm(n, object$mean[id, ], object$sd[id, ])
+        fact = as.factor(paste(linkIds[k], time_bins(starttime + tt), sep = "."))
+        id = sapply(levels(fact), function(s) which(levels(object$factors) == s, useNames = FALSE), USE.NAMES = FALSE)
+        ind = as.numeric(fact)
+        speed = rnorm(n, object$mean[id[ind], ], object$sd[id[ind], ])
         tt = tt + len[k] * exp(-speed - E)
     }
     tt
@@ -33,10 +31,7 @@ predict.traveltime.no_dependence <- function(object, linkIds, len, starttime, n 
 
 
 predict.traveltime.HMM <- function(object, linkIds, len, starttime, n = 1000, ...) {
-    if(!grepl('HMM', object$model))
-        stop("Object model is not HMM")
-
-    ## sampling E (trip-effect)
+     ## sampling E (trip-effect)
     if(grepl('trip', object$model))
         E = rnorm(n, mean = 0, sd = object$tau) else E = 0
     nQ = object$nQ
@@ -48,10 +43,10 @@ predict.traveltime.HMM <- function(object, linkIds, len, starttime, n = 1000, ..
     if (length(linkIds) > 1) 
         for (k in 2:length(linkIds)) {
             # this saves about 50ms for 117 routes (.4 ms per route)
-            fact = paste(linkIds[k], time_bins(starttime + tt), sep = ".")
-            id = sapply(unique(fact), function(s) which(levels(object$factors) == 
+            fact = as.factor(paste(linkIds[k], time_bins(starttime + tt), sep = "."))
+            id = sapply(levels(fact), function(s) which(levels(object$factors) == 
                 s, useNames = FALSE), USE.NAMES = FALSE)
-            ind = as.numeric(as.factor(fact))
+            ind = as.numeric(fact)
             indIds = (1:length(id) - 1) * nQ
             ## creating tmat takes about 10ms for 2 rows or the full matrix to speed up create
             ## tmat2 before the loop or post-estimation for the whole Quebec dataset, for 1294
@@ -60,7 +55,7 @@ predict.traveltime.HMM <- function(object, linkIds, len, starttime, n = 1000, ..
             tmat2 = t(apply(tmat2, 1, cumsum))
             tmat2 = tmat2[indIds[ind] + Qk, ]
             Qk = max.col(runif(n) < tmat2, "first")
-            speed = rnorm(n, object$mean[id, Qk], object$sd[id, Qk])
+            speed = rnorm(n, object$mean[cbind(id[ind], Qk)], object$sd[cbind(id[ind], Qk)])
             tt = tt + len[k] * exp(-speed - E)
         }
     tt
