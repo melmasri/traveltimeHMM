@@ -51,7 +51,7 @@ predict.traveltime.HMM <- function(object, linkIds, len, starttime, n = 1000, ..
             ## creating tmat takes about 10ms for 2 rows or the full matrix to speed up create
             ## tmat2 before the loop or post-estimation for the whole Quebec dataset, for 1294
             ## obs it takes about an extra 11sec if at the top of the loop
-            tmat2 = matrix(drop(t(object$tmat[id, ])), ncol = nQ, byrow = TRUE)
+            tmat2 = matrix(c(t(object$tmat[id, ])), ncol = nQ, byrow = TRUE)
             tmat2 = t(apply(tmat2, 1, cumsum))
             tmat2 = tmat2[indIds[ind] + Qk, ]
             Qk = max.col(runif(n) < tmat2, "first")
