@@ -1,8 +1,7 @@
 
 analyze.prediction<-function(pred, obs, file = NULL,plot=TRUE, ...){
     dt = merge(pred, obs, by='trip')
-    pointEst = dt[, .(
-        pred = mean(predTT),
+    pointEst = dt[, .(pred = mean(predTT),
         obs = obsTT[1],
         timeBin = timeBins[1],
         len = len[1],
