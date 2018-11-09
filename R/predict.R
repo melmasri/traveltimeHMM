@@ -1,18 +1,21 @@
 
-predict.traveltime<-function(object, linkIds, len, starttime,  n=1000){
+predict.traveltime<-function(object, linkIds, len, starttime,  n=1000, ...){
     if(object$model == 'no-dependence')
-        return(predict.traveltime.no_dependence(object, linkIds, len , starttime, n))
+        return(predict.traveltime.no_dependence(object, linkIds, len , starttime, n, ...))
     
     if(object$model =='trip')
-        return(predict.traveltime.no_dependence(object, linkIds, len , starttime, n))
+        return(predict.traveltime.no_dependence(object, linkIds, len , starttime, n, ...))
     
     if(grepl('HMM', object$model))
-        return(predict.traveltime.HMM(object, linkIds, len, starttime, n))
+        return(predict.traveltime.HMM(object, linkIds, len, starttime, n, ...))
 }
 
-predict.traveltime.no_dependence <- function(object, linkIds, len, starttime, n = 1000) {
-     ## sampling E (trip-effect)
-    if(grepl('trip', object$model))
+predict.traveltime.no_dependence <- function(object, linkIds, len, starttime, n = 1000, ...) {
+    
+    param = list(...)
+    ## sampling E (trip-effect)
+    if(!is.null(param$E) && is.numeric(param$E)) E = param$E
+    else if(grepl('trip', object$model))
         E = rnorm(n, mean = 0, sd = est$tau) else E = 0
     
     fact = paste(linkIds[1], time_bins(starttime), sep = ".")
@@ -31,18 +34,20 @@ predict.traveltime.no_dependence <- function(object, linkIds, len, starttime, n 
 
 
 predict.traveltime.HMM <- function(object, linkIds, len, starttime, n = 1000, ...) {
-     ## sampling E (trip-effect)
-    if(grepl('trip', object$model))
-        E = rnorm(n, mean = 0, sd = object$tau) else E = 0
+    ## sampling E (trip-effect)
+    param = list(...)
+    if(!is.null(param$E) && is.numeric(param$E)) E = param$E
+    else if(grepl('trip', object$model))
+        E = rnorm(n, mean = 0, sd = est$tau) else E = 0
     nQ = object$nQ
     id = which(levels(object$factors) == paste(linkIds[1], time_bins(starttime), 
-        sep = "."), useNames = FALSE)
+                         sep = "."), useNames = FALSE)
     Qk = sample.int(nQ, n, replace = TRUE, prob = object$init[id, ])
     speed = rnorm(n, object$mean[id, Qk], object$sd[id, Qk])
     tt = len[1] * exp(-speed - E)
     if (length(linkIds) > 1) 
         for (k in 2:length(linkIds)) {
-            # this saves about 50ms for 117 routes (.4 ms per route)
+            ## this saves about 50ms for 117 routes (.4 ms per route)
             fact = as.factor(paste(linkIds[k], time_bins(starttime + tt), sep = "."))
             id = sapply(levels(fact), function(s) which(levels(object$factors) == 
                 s, useNames = FALSE), USE.NAMES = FALSE)
