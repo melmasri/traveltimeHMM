@@ -5,8 +5,8 @@
 \title{\code{traveltimeHMM} estimates trips and link specific speed parameters from observed average speeds per unique trip and link.}
 \usage{
 traveltimeHMM(speeds, trips, timeBins, linkIds, nQ = 1L,
-  model = c("HMM", "trip-HMM", "trip", "no-dependence"), tolErr = 10,
-  L = 10, maxIter = NULL, verbose = FALSE)
+  model = c("HMM", "trip-HMM", "trip", "no-dependence"), tol.err = 10,
+  L = 10, max.it = NULL, ...)
 }
 \arguments{
 \item{speeds}{A numeric vector of speed observations on the log-scale.}
@@ -19,14 +19,14 @@ traveltimeHMM(speeds, trips, timeBins, linkIds, nQ = 1L,
 
 \item{nQ}{Integer number of states, default is \code{1}.}
 
-\item{model}{Type of model as string, \code{trip-HMM} (defualt) to use a hidden Markov model (HMM) with trip effect, \code{HMM} is an HMM without trip effect,
+\item{model}{Type of model as string, \code{trip-HMM} to use a hidden Markov model (HMM) with trip effect, \code{HMM} (default) is an HMM without trip effect,
 \code{trip} is trip effect model without HMM, and \code{no-dependence} is model with link specific parameter only without an HMM nor a trip effect.}
+
+\item{tol.err}{Is the}
 
 \item{L}{An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the paramter for, \code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.}
 
-\item{maxIter}{An Integer for the maximum number of iterations to run for, default = \code{NULL}.}
-
-\item{verbose}{logical (\code{default = FALSE}); indicating whether to a summary statistics of the data, and extra details.}
+\item{max.it}{An Integer for the maximum number of iterations to run for, default = \code{NULL}.}
 }
 \description{
 \code{traveltimeHMM} estimates trips and link specific speed parameters from observed average speeds per unique trip and link.

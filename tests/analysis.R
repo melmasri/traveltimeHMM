@@ -240,50 +240,6 @@ lines(density(predict.traveltime.HMM(est, linkids,len, starttime = stime,n =5000
 dev.off()
 
 
-load('../ready2model_simple.RData')
-
-library(data.table)
-load('ready2model.RData')
-devtools::load_all()
-rm(list=ls())
-
-load('ready2model_simple.RData')
-
-devtools::load_all()
-
-aux = which(tt.trip.link$trip==test.trips[1])
-logspeeds = tt.trip.link$logspeed[aux]
-timeBins = tt.trip.link$timeBins[aux]
-linkIds = tt.trip.link$linkidrel[aux]
-len = tt.trip.link$length[aux]
-trips = tt.trip.link$trip
-nQ = 2
-model = 'trip-HMM'
-tolErr = 1
-L = 10
-max_iter = 40
-set.seed(123)
-
-traveltimeHMM(logspeeds, trips, timeBins, linkIds, nQ = 2, model = 'trip-HMM', max=50)
-
-est = traveltimeHMM(logspeeds, trips, timeBins, linkIds, model = 'trip', nQ = 3)
-
-
-
-hist(exp(est$E), freq=FALSE)
-lines(density(exp(est$E)), lwd=2, col='blue')
-
-
-##
-obs  = tt.trip.link[trip %in% test.trips, .(obsTT = sum(tt), timeBins=timeBins[1], len = sum(length)), by=trip]
-
-pred = tt.trip.link[trip %in% test.trips, .(predTT= predict.traveltime(est, linkidrel, length,time[1])), by=trip]
-
-aux = analyze.prediction(pred, obs)
-
-write.csv(aux$empirical.coverage, file='woodard_trip-HMM_empirical-coverge.csv')
-write.csv(aux$interval.width, file='woodard_trip-HMM_interval-width.csv')
-
 
 
 

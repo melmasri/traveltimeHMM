@@ -5,11 +5,11 @@
 #' @param timeBins A character vector of time bins for each observation of \code{speed}.
 #' @param linkIds A vector of link ids (route or way) for each observation of \code{speed}.
 #' @param nQ Integer number of states, default is \code{1}.
-#' @param model Type of model as string, \code{trip-HMM} (defualt) to use a hidden Markov model (HMM) with trip effect, \code{HMM} is an HMM without trip effect,
+#' @param model Type of model as string, \code{trip-HMM} to use a hidden Markov model (HMM) with trip effect, \code{HMM} (default) is an HMM without trip effect,
 #' \code{trip} is trip effect model without HMM, and \code{no-dependence} is model with link specific parameter only without an HMM nor a trip effect.
-#' @param maxIter An Integer for the maximum number of iterations to run for, default = \code{NULL}.
+#' @param max.it An Integer for the maximum number of iterations to run for, default = \code{NULL}.
 #' @param L An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the paramter for, \code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.
-#' @param verbose logical (\code{default = FALSE}); indicating whether to a summary statistics of the data, and extra details.
+#' @param tol.err Is the 
 #'
 #' @details NULL
 #' 
@@ -19,7 +19,7 @@
 #' \dontrun{
 #' }
 traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("HMM", 
-    "trip-HMM","trip","no-dependence"), tolErr = 10, L = 10, maxIter = NULL, verbose = FALSE, ...) {
+    "trip-HMM","trip","no-dependence"), tol.err = 10, L = 10, max.it = NULL, ...) {
 
     ## #-------------------------------------------------- Testing requirements
     if (length(speeds) != length(trips) || length(speeds) != length(timeBins)) 
@@ -217,18 +217,18 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
         E <- E_new
         iter <- iter + 1
 
-        if(!is.null(maxIter) && iter==1)
-            cat('Expected completion of', maxIter, 'iterations in', format((maxIter-1) * (Sys.time() - tstart), digits = 3), fill=TRUE)
+        if(!is.null(max.it) && iter==1)
+            cat('Expected completion of', max.it, 'iterations in', format((max.it-1) * (Sys.time() - tstart), digits = 3), fill=TRUE)
 
         cat(round(iter_error,2), "error in iteration", iter, "@", format(Sys.time() - tstart, digits = 3), fill=TRUE)
 
                 
         ## breaking loop on convergence
-        if (iter_error <= tolErr) {
+        if (iter_error <= tol.err) {
             cat("Parameters converged at iteration" , iter-1, fill=TRUE)
             break
         }
-        if (!is.null(maxIter) && iter >= maxIter) {
+        if (!is.null(max.it) && iter >= max.it) {
             cat("Reached maximum number of iterations", fill=TRUE)
             break
         }
