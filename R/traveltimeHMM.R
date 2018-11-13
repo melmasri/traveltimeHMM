@@ -212,7 +212,16 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
         ## Calculating || ThetaNew - Theta ||
         A = c(mu_speed[-linksLessMinObs,], var_speed[-linksLessMinObs,])
         B = c(mu_speedNew[-linksLessMinObs,], var_speedNew[-linksLessMinObs,])
-        if(grepl('HMM', model)){ A = c(A, init[-init_L,], tmat); B = c(B, initNew[-init_L,], tmatNew)}
+        if(grepl('HMM', model)){
+            A = c(A, init[-init_L,], tmat[-unique(linksLessMinObs,only_init),])
+            B = c(B, initNew[-init_L,], tmatNew[-unique(linksLessMinObs,only_init),])
+        }
+        if(grepl('trip',model)) { A = c(A, E); B = c(B,E_new)}
+        iter_error = error(A, B)
+
+        A = c(mu_speed, var_speed)
+        B = c(mu_speedNew, var_speedNew)
+        if(grepl('HMM', model)){ A = c(A, init, tmat); B = c(B, initNew, tmatNew)}
         if(grepl('trip',model)) { A = c(A, E); B = c(B,E_new)}
         iter_error = error(A, B)
 
