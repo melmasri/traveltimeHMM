@@ -21,7 +21,7 @@
 #' \dontrun{
 #' }
 traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("HMM", 
-    "trip-HMM","trip","no-dependence"), tol.err = 10, L = 10, max.it = NULL, ...) {
+    "trip-HMM","trip","no-dependence"), tol.err = 10, L = 10L, max.it = NULL, ...) {
 
     ## #-------------------------------------------------- Testing requirements
     if (length(speeds) != length(trips) || length(speeds) != length(timeBins)) 
@@ -164,12 +164,12 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
             ## if (!is.null(index_init_L)) {
             ##     tmat_impute = tmat_est(probJointStates, probStates, init_ids, timeFactor)
             ##     tmatNew[init_L, ] <- tmat_impute[index_init_L, ]  # applying to all factors with less than min Obs
-            ##     if (length(only_init))
-            ##         tmatNew[only_init, ] <- tmat_impute[index_only_init, ]
             ## }
             if (!is.null(indexLinksLessMinObs)) {
                 tmat_impute = tmat_est(probJointStates, probStates, init_ids, timeFactor)
                 tmatNew[linksLessMinObs, ] <- tmat_impute[indexLinksLessMinObs ]  # applying to all factors with less than min Obs
+                if (length(only_init))
+                    tmatNew[only_init, ] <- tmat_impute[index_only_init, ]
             }
             
         }
