@@ -1,7 +1,7 @@
 #' \code{traveltimeHMM} estimates trips and link specific speed parameters from observed average speeds per unique trip and link.
 #'
 #' @param speeds A numeric vector of speed observations on the log-scale.
-#' @param trips An integer of character vector of trip ids of the same size as \code{speed}.
+#' @param trips An integer or character vector of trip ids for each observation of \code{speed}.
 #' @param timeBins A character vector of time bins for each observation of \code{speed}.
 #' @param linkIds A vector of link ids (route or way) for each observation of \code{speed}.
 #' @param nQ Integer number of states, default is \code{1}.
@@ -9,9 +9,11 @@
 #' \code{trip} is trip effect model without HMM, and \code{no-dependence} is model with link specific parameter only without an HMM nor a trip effect.
 #' @param max.it An Integer for the maximum number of iterations to run for, default = \code{NULL}.
 #' @param L An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the paramter for, \code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.
-#' @param tol.err Is the 
+#' @param tol.err A numeric variable representing the level of tolerable distance between parameter estimates from consecutive iterations.
+#' @param ... extra specific parameters, see details
+#' @details 
 #'
-#' @details NULL
+#'
 #' 
 #' @return  NULL
 #'
@@ -203,9 +205,9 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
         }
         
         ## Calculating || ThetaNew - Theta ||
-        A = c(mu_speed, var_speed)
-        B = c(mu_speedNew, var_speedNew)
-        if(grepl('HMM', model)){ A = c(A, init, tmat); B = c(B, initNew, tmatNew)}
+        A = c(mu_speed[-linksLessMinObs,], var_speed[-linksLessMinObs,])
+        B = c(mu_speedNew[-linksLessMinObs,], var_speedNew[-linksLessMinObs,])
+        if(grepl('HMM', model)){ A = c(A, init[-init_L,], tmat); B = c(B, initNew[-init_L,], tmatNew)}
         if(grepl('trip',model)) { A = c(A, E); B = c(B,E_new)}
         iter_error = error(A, B)
 
