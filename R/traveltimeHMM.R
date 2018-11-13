@@ -161,12 +161,17 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
 
             ## computing transition matrix estimate and imputing < threshold with second factor
             tmatNew = tmat_est(probJointStates, probStates, init_ids, linkTimeFactor)
-            if (!is.null(index_init_L)) {
+            ## if (!is.null(index_init_L)) {
+            ##     tmat_impute = tmat_est(probJointStates, probStates, init_ids, timeFactor)
+            ##     tmatNew[init_L, ] <- tmat_impute[index_init_L, ]  # applying to all factors with less than min Obs
+            ##     if (length(only_init))
+            ##         tmatNew[only_init, ] <- tmat_impute[index_only_init, ]
+            ## }
+            if (!is.null(indexLinksLessMinObs)) {
                 tmat_impute = tmat_est(probJointStates, probStates, init_ids, timeFactor)
-                tmatNew[init_L, ] <- tmat_impute[index_init_L, ]  # applying to all factors with less than min Obs
-                if (length(only_init))
-                    tmatNew[only_init, ] <- tmat_impute[index_only_init, ]
+                tmatNew[linksLessMinObs, ] <- tmat_impute[indexLinksLessMinObs ]  # applying to all factors with less than min Obs
             }
+            
         }
         
         ## calculating mean and variance of gaussian
