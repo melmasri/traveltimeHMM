@@ -16,5 +16,5 @@ single_trip <- subset(trips, trip==2700)
 pred <- predict.traveltime(fit, single_trip$linkId, single_trip$length,single_trip$time[1])
 hist(pred)      # histogram of prediction samples
 mean(pred)      # travel time point estimate
-sum(single_trip$traveltime)    # observed traveltime
+sum(single_trip$traveltime)    # observed travel time
 ```
