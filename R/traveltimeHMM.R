@@ -219,12 +219,6 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
         if(grepl('trip',model)) { A = c(A, E); B = c(B,E_new)}
         iter_error = error(A, B)
 
-        A = c(mu_speed, var_speed)
-        B = c(mu_speedNew, var_speedNew)
-        if(grepl('HMM', model)){ A = c(A, init, tmat); B = c(B, initNew, tmatNew)}
-        if(grepl('trip',model)) { A = c(A, E); B = c(B,E_new)}
-        iter_error = error(A, B)
-
         ## re-positioning parameters
         tmat <- tmatNew
         init <- initNew
