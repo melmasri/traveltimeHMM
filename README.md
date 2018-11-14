@@ -1,9 +1,7 @@
 # traveltimeHMM
 Travel time prediction from GPS points using an HMM.
 
-# Install devtools from CRAN
-install.packages("devtools")
+# Installation
 
-# Or the development version from GitHub:
-# install.packages("devtools")
+install.packages("devtools")
 devtools::install_github("melmasri/traveltimeHMM")

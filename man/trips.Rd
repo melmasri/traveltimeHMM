@@ -3,8 +3,8 @@
 \docType{data}
 \name{trips}
 \alias{trips}
-\title{A sample of 4984 trips over Quebec City in 2014}
-\format{A data frame with 324056 rows and 7 variables:
+\title{A sample of 4914 trips over Quebec City in 2014}
+\format{A data frame with 322799 rows and 7 variables:
 \describe{
   \item{trip}{a numeric unique trip ID}
   \item{linkId}{a numeric ID representing differet road links}
@@ -18,6 +18,6 @@
 trips
 }
 \description{
-A dataset containing 4984 driving trips for a total of 324056 observations.
+A dataset containing 4914 driving trips for a total of 322799 observations.
 }
 \keyword{datasets}

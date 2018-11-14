@@ -8,24 +8,45 @@
 #' @param model Type of model as string, \code{trip-HMM} to use a hidden Markov model (HMM) with trip effect, \code{HMM} (default) is an HMM without trip effect,
 #' \code{trip} is trip effect model without HMM, and \code{no-dependence} is model with link specific parameter only without an HMM nor a trip effect.
 #' @param max.it An Integer for the maximum number of iterations to run for, default = \code{NULL}.
-#' @param L An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the paramter for, \code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.
+#' @param L An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the parameter for, \code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.
 #' @param tol.err A numeric variable representing the level of tolerable distance between parameter estimates from consecutive iterations.
 #' @param ... extra specific parameters, see details
-#' @details 
-#'
-#'
+#' @details NULL
 #' 
-#' @return  NULL
+#' @return \code{traveltimeHMM} returns a list of the following parameters
+#' 
+#' \item{factors}{a factor of interactions (linkId x timeBin) with the same length of observations, and with levels corresponding to unique factors}
+#' \item{trip}{a factor of trips.}
+#' \item{tmat}{a transition matrix with rows corresponding to \code{levels(factors)}, with columns being the row-wise transition matrix of that factor. For example, \code{matrix(tmat[1,], ncol = nQ, nrow = nQ, byrow = TRUE)} is the transition matrix of \code{levels(factors)[1]}.}
+#' \item{init}{a initial state probability matrix with rows corresponding to \code{levels(factors)}, and columns to the \code{nQ} states.}
+#' \item{sd}{a matrix of standard deviations estimates with rows corresponding to \code{levels(factors)}, and columns to standard deviation estimates of the \code{nQ} states.}
+#' \item{mean}{a matrix of mean estimates with rows corresponding to \code{levels(factors)}, and columns to mean estimates for the \code{nQ} states.}
+#' \item{tau}{a numeric variable for the standard deviation estimate of the trip effect parameter \code{E}.}
+#' \item{E}{a numeric vector of trip effect estimates corresponding to \code{levels(trip)}.}
+#' \item{nQ}{an integer number of states.}
+#' \item{nB}{an integer number of unique time bins.}
+#' \item{nObs}{an integer number of observations.}
+#' \item{model}{the type of model used.}
 #'
 #' @examples
 #' \dontrun{
+#' data(trips)
+#' ?traveltimeHMM  # for help
+#' fit <- traveltimeHMM(trips$logspeed, trips$trip, trips$timeBin, trips$linkId, nQ = 2, max.it = 20)
+#' single_trip <- subset(trips, trip==2700)
+#' pred <- predict.traveltime(fit, single_trip$linkId, single_trip$length,single_trip$time[1])
+#' hist(pred)      # histogram of prediction samples
+#' mean(pred)      # travel time point estimate
+#' sum(single_trip$traveltime)    # observed traveltime
 #' }
-traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("HMM", 
-    "trip-HMM","trip","no-dependence"), tol.err = 10, L = 10L, max.it = NULL, ...) {
+#' @export
+traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
+                          model = c("HMM", "trip-HMM","trip","no-dependence"),
+                          tol.err = 10, L = 10L, max.it = NULL, ...) {
 
     ## #-------------------------------------------------- Testing requirements
     if (length(speeds) != length(trips) || length(speeds) != length(timeBins)) 
-        stop("Variabels logspeds, trips and timeBins are not equal in length!")
+        stop("Variables logspeed, trips and timeBins are not equal in length!")
     
     ## #-------------------------------------------------- warnings for user
     maxSpeed = 130  # max speed km/h
@@ -33,7 +54,7 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
     if (length(aux) > 0) 
         warning(paste("Many observations are higher than speed limit (130km/h)!, about", 
             paste0(round(100 * length(aux)/length(speeds), 2), "% of observations."), 
-            " It is advised to remove these observations"))
+            " It is advised to remove these observations"),  immediate.=TRUE, call.=FALSE)
     
     model <- match.arg(model)
     param <- list(...)
@@ -112,14 +133,14 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
         }else
             warning('Initial state values are not used, init must be of length nQ and sum to 1', immediate.=TRUE, call.=FALSE)
     }
-    ## creating initial matrices from inital values
+    ## creating initial matrices from initial values
     init <- matrix(init.0, nrow = nB * nlinks, ncol = nQ, byrow = TRUE)
     tmat <- matrix(tmat.0, nrow = nB * nlinks, ncol = nQ2, byrow = TRUE)
     
     ## Trip-effect 
     tau2 = 1
     if(grepl('trip', model)) E <- rnorm(nTrips, 0, sqrt(tau2)) else E <- numeric(nTrips)
-    ## Empyt variables
+    ## Empty variables
     initNew <- tmatNew <- mu_speedNew <- var_speedNew <- NULL
     E_new <- E
     probStates <- NULL
@@ -141,7 +162,7 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
             
             ## probability of each state per observation
             alpha = matrix(unlist(lapply(fb, function(r) r$alpha), use.names = FALSE), 
-                ncol = nQ, byrow = TRUE)  # forwad prob. normalized
+                ncol = nQ, byrow = TRUE)  # forward prob. normalized
             beta = matrix(unlist(lapply(fb, function(r) r$beta), use.names = FALSE), 
                 ncol = nQ, byrow = TRUE)  # backward prob. normalized
             probStates = normalizeR(alpha * beta + 1e-05, m = nObs, n = nQ)  # smoothed and normalized prob
@@ -174,7 +195,7 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
             
         }
         
-        ## calculating mean and variance of gaussian
+        ## calculating mean and variance of Gaussian
         meanSig = gaussian_param_by_factor(speeds - E[tripId], linkTimeFactor, probStates)
         ## getting states with less than L factors
         if (!is.null(indexLinksLessMinObs)) {
@@ -200,7 +221,7 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
             ## Calculating E-trip variance
             tau2 <- .colSums(E^2, m = nTrips, n=1)/nTrips
 
-            ## Updaing E-trip per trip
+            ## Updating E-trip per trip
             dummy <- if(is.null(probStates)) 1/var_speedNew[obsId,] else  probStates/var_speedNew[obsId,]
             a <- .rowSums(dummy, m = nObs, n = nQ)
             h <- .rowSums(dummy * mu_speedNew[obsId,], m = nObs, n = nQ)
@@ -244,8 +265,9 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L, model = c("
         }
     }
     
-    ## returning variabels
+    ## returning variables
     invisible(list(factors = linkTimeFactor,
+                   trip = trips,
                    tmat = tmat,
                    init = init,
                    sd = sqrt(var_speed),

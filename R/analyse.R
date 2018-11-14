@@ -9,6 +9,7 @@ analyze.prediction<-function(pred, obs, file = NULL,plot=TRUE, ...){
         ARE =  abs(mean(predTT) -obsTT[1])/obsTT[1],
         AR = abs(mean(predTT) - obsTT[1]),
         bias =log(mean(predTT)) - log(obsTT[1] ),
+        Covered1 = quantile(predTT, probs = 0.025) <= obsTT[1] & quantile(predTT, probs = 0.975) >= obsTT[1],
         Covered = sign(prod(quantile(predTT, probs = c(0.025, 0.975)) - obsTT[1]))==-1,
         QuantileRange = diff(quantile(predTT, probs = c(0.025,0.975)))
     ), by=trip]
@@ -19,6 +20,7 @@ analyze.prediction<-function(pred, obs, file = NULL,plot=TRUE, ...){
         bias = mean(bias),
         meanARE = mean(ARE),
         coverege = mean(Covered),
+        coverege1 = mean(Covered1),
         covergeInterval = mean(QuantileRange),
         coverageOfObs = mean(QuantileRange/obs)
     ),]
@@ -28,6 +30,7 @@ analyze.prediction<-function(pred, obs, file = NULL,plot=TRUE, ...){
         bias = mean(bias),
         meanARE = mean(ARE),
         coverege = mean(Covered),
+        coverege1 = mean(Covered1),
         covergeInterval = mean(QuantileRange),
         coverageOfObs = mean(QuantileRange/obs)
     ),by = timeBin]
