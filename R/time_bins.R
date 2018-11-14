@@ -3,7 +3,7 @@ time_bins_readable <- function(t){
     ## A humanly readable function that 
     ## returns bins of time
     day = weekdays(t)
-    h = hour(t)
+    h = as.POSIXlt(t)$hour
     sapply(1:length(t), function(k){
         if(day[k] %in%  c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")){
             ## weekday Mon-Fri
@@ -30,7 +30,7 @@ time_bins_functional<-function(time_bin_readable_function){
     time.bins.per.week.hour = sapply(weekhours, function(r) time_bin_readable_function(Sun0+r*3600))
     function(t){
         ## time 0 is Sunday 0 to 59 min AM, before 1AM
-        whour = hour(t)+ 1 + (wday(t)-1)*24
+        whour = as.POSIXlt(t)$hour + 1 + (wday(t)-1)*24
         time.bins.per.week.hour[whour]
     }
 }
