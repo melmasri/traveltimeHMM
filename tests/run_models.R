@@ -96,8 +96,8 @@ est = traveltimeHMM(tt.trip.link.train$logspeed, tt.trip.link.train$trip, tt.tri
 pred = tt.trip.link[trip %in% testtrips][order(trip,time)][, .(predTT= predict.traveltime(est, linkidrel, length,time[1])), by=trip]
 obs  = tt.trip.link[trip %in% testtrips][order(trip,time)][, .(obsTT = sum(tt), timeBins=timeBins[1], len = sum(length)), by=trip]
 aux = analyze.prediction(pred, obs)
-write.csv(aux$empirical.coverage, file='woodard_trip-hmm-insample_empirical-coverge.csv')
-write.csv(aux$interval.width, file='woodard_trip-hmm-insample_interval-width.csv')
+write.csv(aux$empirical.coverage, file='woodard_trip-hmm_empirical-coverge.csv')
+write.csv(aux$interval.width, file='woodard_trip-hmm-_interval-width.csv')
 
 ## -------------------------------------------------- HMM model
 est = traveltimeHMM(tt.trip.link.train$logspeed, tt.trip.link.train$trip, tt.trip.link.train$timeBins, tt.trip.link.train$linkidrel,  model ='HMM', max.it=200, tol.err = 10, nQ =2)
@@ -167,31 +167,31 @@ dev.off()
 
 ## -------------------------------------------------- linear model
 
-## fit = lm(log(tt) ~ log(len) + timeBins, data = tt.trip.link.train[, .(tt = sum(tt), len = sum(length), timeBins = timeBins[1]), by =trip])
+print('linear model')
+fit = lm(log(tt) ~ log(len) + timeBins, data = tt.trip.link.train[, .(tt = sum(tt), len = sum(length), timeBins = timeBins[1]), by =trip])
 
+tt.trip.link.test = tt.trip.link[trip %in% testtrips]
+obs = tt.trip.link.test[, .(obsTT = sum(tt),
+    len = sum(length),
+    timeBins = timeBins[1]), by = trip]
+obs = obs[order(trip, timeBins)]
 
-## tt.trip.link.test = tt.trip.link[trip %in% test.trips]
-## obs = tt.trip.link.test[, .(obsTT = sum(tt),
-##     len = sum(length),
-##     timeBins = timeBins[1]), by = trip]
-## obs = obs[order(trip, timeBins)]
+pred = cbind(trip = obs$trip, predTT = exp(predict(fit, newdata = obs, prediction.interval=TRUE)))
+pred = data.table(pred)
+analyze.prediction(pred, obs)
 
-## pred = cbind(trip = obs$trip, predTT = exp(predict(fit, newdata = obs )))
-## pred = data.table(pred)
-## analyze.prediction(pred, obs)
+pred = cbind(trip = obs$trip, exp(predict(fit, newdata = obs,interval = 'pred')))
+dt = data.table(merge(pred, obs, by = 'trip' ))
 
-## pred = cbind(trip = obs$trip, exp(predict(fit, newdata = obs,interval = 'conf')))
-## dt = data.table(merge(pred, obs, by = 'trip' ))
+dt[, Covered := lwr<= obsTT & upr>=obsTT]
+dt[, QuantileRange := upr - lwr]
 
-## dt[, Covered := lwr<= obsTT & upr>=obsTT]
-## dt[, QuantileRange := upr - lwr]
+dt[, .(coverege = mean(Covered),
+       covergeInterval = mean(QuantileRange),
+       coverageOfObs = mean(QuantileRange/obsTT))]
 
-## dt[, .(coverege = mean(Covered),
-##        covergeInterval = mean(QuantileRange),
-##        coverageOfObs = mean(QuantileRange/obsTT))]
-
-## dt[, .(coverege = mean(Covered),
-##        covergeInterval = mean(QuantileRange),
-##        coverageOfObs = mean(QuantileRange/obsTT)), by = timeBins]
+dt[, .(coverege = mean(Covered),
+       covergeInterval = mean(QuantileRange),
+       coverageOfObs = mean(QuantileRange/obsTT)), by = timeBins]
 
 
