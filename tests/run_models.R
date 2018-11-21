@@ -5,6 +5,7 @@ load('ready2model.RData')
 
 analyze.prediction<-function(pred, obs, file = NULL,plot=TRUE, ...){
     dt = merge(pred, obs, by='trip')
+    
     pointEst = dt[, .(
         pred = mean(predTT),
         obs = obsTT[1],
@@ -16,8 +17,7 @@ analyze.prediction<-function(pred, obs, file = NULL,plot=TRUE, ...){
         Covered = sign(prod(quantile(predTT, probs = c(0.025, 0.975)) - obsTT[1]))==-1,
         QuantileRange = diff(quantile(predTT, probs = c(0.025,0.975)))
     ), by=trip]
-
-    errors = pointEst[, .(
+    errors = pointEst[, .(N=.N,
         geoARE = exp(mean(log(ARE))),
         meanAE = mean(AR),
         bias = mean(bias),
@@ -27,6 +27,7 @@ analyze.prediction<-function(pred, obs, file = NULL,plot=TRUE, ...){
         coverageOfObs = mean(QuantileRange/obs)
     ),]
     errorsTimeBin = pointEst[, .(
+        N=.N,
         geoARE = exp(mean(log(ARE))),
         meanAE = mean(AR),
         bias = mean(bias),
@@ -38,7 +39,7 @@ analyze.prediction<-function(pred, obs, file = NULL,plot=TRUE, ...){
     print('Errors over all')
     print(errors)
     print('Errors over timeBins')
-    print(errorsTimeBin)
+    print(errorsTimeBin[order(timeBin)])
 
     coverage_intervals = seq(0,1, 0.05)
     names(coverage_intervals)<-paste0('alpha_', coverage_intervals)
@@ -120,7 +121,7 @@ write.csv(aux$interval.width, file='woodard_trip_interval-width.csv')
 ## -------------------------------------------------- no-dependece model
 est = traveltimeHMM(tt.trip.link.train$logspeed, tt.trip.link.train$trip, tt.trip.link.train$timeBins, tt.trip.link.train$linkidrel,  model ='no-dep', max.it=200, tol.err = 10, nQ =1)
 ## predict for held-out-set
-pred = tt.trip.link[trip %in% testtrips][order(trip,time)][, .({print(trip[1]);predTT= predict.traveltime(est, linkidrel, length,time[1])}), by=trip]
+pred = tt.trip.link[trip %in% testtrips][order(trip,time)][, .(predTT= predict.traveltime(est, linkidrel, length,time[1])), by=trip]
 obs  = tt.trip.link[trip %in% testtrips][order(trip,time)][, .(obsTT = sum(tt), timeBins=timeBins[1], len = sum(length)), by=trip]
 aux = analyze.prediction(pred, obs)
 write.csv(aux$empirical.coverage, file='woodard_no-dependece_empirical-coverge.csv')
@@ -192,3 +193,5 @@ dev.off()
 ## dt[, .(coverege = mean(Covered),
 ##        covergeInterval = mean(QuantileRange),
 ##        coverageOfObs = mean(QuantileRange/obsTT)), by = timeBins]
+
+
