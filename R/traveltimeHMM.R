@@ -156,7 +156,7 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
     repeat {
         ## forward-backward
         if (grepl("HMM", model)) {
-            probTran = tmat[obsId, ] * pmax(dnorm(speeds, mu_speed[obsId,], var_speed[obsId, ]), 0.001)[, rep(1:nQ, nQ)]
+            probTran = tmat[obsId, ] * pmax(dnorm(speeds, E[tripId] + mu_speed[obsId,], var_speed[obsId, ]), 0.001)[, rep(1:nQ, nQ)]
             fb = tapply(1:nObs, trips, function(r)
                 forwardback(probTran[r,], init[obsId[r[1]], ]))
             
