@@ -17,6 +17,15 @@ analyze.prediction<-function(pred, obs, file = NULL,plot=TRUE, ...){
         Covered = sign(prod(quantile(predTT, probs = c(0.025, 0.975)) - obsTT[1]))==-1,
         QuantileRange = diff(quantile(predTT, probs = c(0.025,0.975)))
     ), by=trip]
+    coverage_intervals = seq(0,1, 0.01)
+    names(coverage_intervals)<-paste0('alpha_', coverage_intervals)
+    quant = dt[,{coverage = lapply(coverage_intervals, function(a) diff(quantile(predTT, probs = c(a/2, 1-a/2), names=FALSE)));
+                 covered =  lapply(coverage_intervals, function(a) sign(prod(quantile(predTT, probs = c(a/2, 1-a/2)) - obsTT[1]))==-1);
+                 list( coverage = list(coverage), covered = list(covered))
+             },by=trip]
+    
+    pointEst = merge(pointEst, quant, by = 'trip')
+
     errors = pointEst[, .(N=.N,
         geoARE = exp(mean(log(ARE))),
         meanAE = mean(AR),
@@ -24,8 +33,9 @@ analyze.prediction<-function(pred, obs, file = NULL,plot=TRUE, ...){
         meanARE = mean(ARE),
         coverege = mean(Covered),
         covergeInterval = mean(QuantileRange),
-        coverageOfObs = mean(QuantileRange/obs)
-    ),]
+        coverageOfObs = mean(QuantileRange/obs),
+        interval95 =  rowMeans(sapply(coverage, unlist))[which(rowMeans(sapply(covered, unlist)) <= .95)[1]]),]
+
     errorsTimeBin = pointEst[, .(
         N=.N,
         geoARE = exp(mean(log(ARE))),
@@ -34,12 +44,10 @@ analyze.prediction<-function(pred, obs, file = NULL,plot=TRUE, ...){
         meanARE = mean(ARE),
         coverege = mean(Covered),
         covergeInterval = mean(QuantileRange),
-        coverageOfObs = mean(QuantileRange/obs)
+        coverageOfObs = mean(QuantileRange/obs),
+        interval95 =  rowMeans(sapply(coverage, unlist))[which(rowMeans(sapply(covered, unlist)) <= .95)[1]]
     ),by = timeBin]
-    print('Errors over all')
-    print(errors)
-    print('Errors over timeBins')
-    print(errorsTimeBin[order(timeBin)])
+
 
     coverage_intervals = seq(0,1, 0.05)
     names(coverage_intervals)<-paste0('alpha_', coverage_intervals)
@@ -51,6 +59,10 @@ analyze.prediction<-function(pred, obs, file = NULL,plot=TRUE, ...){
         list(pred = pred, obs=obs, coverage = list(coverage), covered = list(covered))
     },by=trip]
     
+    print('Errors over all')
+    print(errors)
+    print('Errors over timeBins')
+    print(errorsTimeBin[order(timeBin)])
     return(invisible(list(errors = errors,
                           quantiles = quant,
                           empirical.coverage = rowMeans(sapply(quant$covered, unlist))
@@ -65,7 +77,7 @@ if(length(badObs)>0){
     tt.trip.link= tt.trip.link[-badObs]
 }
 
-est = traveltimeHMM(tt.trip.link$logspeed, tt.trip.link$trip, tt.trip.link$timeBins, tt.trip.link$linkidrel,  model ='no-dep', max.it=2000, tol.err = 10, nQ =1)
+est = traveltimeHMM(tt.trip.link$logspeed, tt.trip.link$trip, tt.trip.link$timeBins, tt.trip.link$linkidrel,  model ='no-dep', max.it=200, tol.err = 10, nQ =1)
 paramid = as.numeric(est$factors)
 devT.test = tt.trip.link[, .(test = abs((logspeed - est$mean[paramid]))/est$sd[paramid], trip, linkidrel )][, .I[test>4]]
 if(length(devT.test)){
@@ -90,7 +102,7 @@ length(testtrips)
 tt.trip.link.train = tt.trip.link[!(trip %in% testtrips)][order(trip, time)]
 
 ## -------------------------------------------------- trip-HMM model
-est = traveltimeHMM(tt.trip.link.train$logspeed, tt.trip.link.train$trip, tt.trip.link.train$timeBins, tt.trip.link.train$linkidrel,  model ='trip-HMM', max.it=2000, tol.err = 10, nQ =2)
+est = traveltimeHMM(tt.trip.link.train$logspeed, tt.trip.link.train$trip, tt.trip.link.train$timeBins, tt.trip.link.train$linkidrel,  model ='trip-HMM', max.it=200, tol.err = 10, nQ =2)
 
 ## predict for held-out-set
 pred = tt.trip.link[trip %in% testtrips][order(trip,time)][, .(predTT= predict.traveltime(est, linkidrel, length,time[1])), by=trip]
@@ -100,7 +112,7 @@ write.csv(aux$empirical.coverage, file='woodard_trip-hmm_empirical-coverge.csv')
 write.csv(aux$interval.width, file='woodard_trip-hmm-_interval-width.csv')
 
 ## -------------------------------------------------- HMM model
-est = traveltimeHMM(tt.trip.link.train$logspeed, tt.trip.link.train$trip, tt.trip.link.train$timeBins, tt.trip.link.train$linkidrel,  model ='HMM', max.it=2000, tol.err = 10, nQ =2)
+est = traveltimeHMM(tt.trip.link.train$logspeed, tt.trip.link.train$trip, tt.trip.link.train$timeBins, tt.trip.link.train$linkidrel,  model ='HMM', max.it=200, tol.err = 10, nQ =2)
 ## predict for held-out-set
 pred = tt.trip.link[trip %in% testtrips][order(trip,time)][, .(predTT= predict.traveltime(est, linkidrel, length,time[1])), by=trip]
 obs  = tt.trip.link[trip %in% testtrips][order(trip,time)][, .(obsTT = sum(tt), timeBins=timeBins[1], len = sum(length)), by=trip]
@@ -109,7 +121,7 @@ write.csv(aux$empirical.coverage, file='woodard_hmm_empirical-coverge.csv')
 write.csv(aux$interval.width, file='woodard_hmm_interval-width.csv')
 
 ## -------------------------------------------------- trip model
-est = traveltimeHMM(tt.trip.link.train$logspeed, tt.trip.link.train$trip, tt.trip.link.train$timeBins, tt.trip.link.train$linkidrel,  model ='trip', max.it=2000, tol.err = 10, nQ =1)
+est = traveltimeHMM(tt.trip.link.train$logspeed, tt.trip.link.train$trip, tt.trip.link.train$timeBins, tt.trip.link.train$linkidrel,  model ='trip', max.it=200, tol.err = 10, nQ =1)
 ## predict for held-out-set
 pred = tt.trip.link[trip %in% testtrips][order(trip,time)][, .(predTT= predict.traveltime(est, linkidrel, length,time[1])), by=trip]
 obs  = tt.trip.link[trip %in% testtrips][order(trip,time)][, .(obsTT = sum(tt), timeBins=timeBins[1], len = sum(length)), by=trip]
@@ -119,7 +131,7 @@ write.csv(aux$interval.width, file='woodard_trip_interval-width.csv')
 
 
 ## -------------------------------------------------- no-dependece model
-est = traveltimeHMM(tt.trip.link.train$logspeed, tt.trip.link.train$trip, tt.trip.link.train$timeBins, tt.trip.link.train$linkidrel,  model ='no-dep', max.it=2000, tol.err = 10, nQ =1)
+est = traveltimeHMM(tt.trip.link.train$logspeed, tt.trip.link.train$trip, tt.trip.link.train$timeBins, tt.trip.link.train$linkidrel,  model ='no-dep', max.it=200, tol.err = 10, nQ =1)
 ## predict for held-out-set
 pred = tt.trip.link[trip %in% testtrips][order(trip,time)][, .(predTT= predict.traveltime(est, linkidrel, length,time[1])), by=trip]
 obs  = tt.trip.link[trip %in% testtrips][order(trip,time)][, .(obsTT = sum(tt), timeBins=timeBins[1], len = sum(length)), by=trip]
