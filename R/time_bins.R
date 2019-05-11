@@ -1,4 +1,103 @@
 
+
+to7daybins <-function(rules){
+    if(typeof(rules[[1]])=='list' ){
+        wdayrules = lapply(0:6,function(d)
+            t(sapply(rules, function(r)
+                if(d %in% r$days) 
+                    data.frame(start = r$start, end=r$end,
+                               tag = r$tag,
+                               stringsAsFactors = FALSE))))
+    }else{
+        wdayrules = lapply(0:6,function(d)
+            if(d %in% rules$days) data.frame(start = rules$start, end = rules$end,
+                                             tag = rules$tag,
+                                             stringsAsFactors = FALSE))
+    }
+    return(wdayrules)
+}
+
+rules2timebins<-function(rules){
+    time2min <- function(t){
+        s = as.POSIXlt(t, format = "%H:%M")
+        s$hour*60 + s$min
+    }
+    
+    if(!is.list(rules))
+        stop('rules must be a list (possibly of lists) of the format list(start,end,days,tag)!')
+    if(typeof(rules[[1]])!='list'){
+        if(!is.null(rules$days) & !all(rules$days %in% 0:6))
+            stop('days must be in 0, 1, ..., 6, (0 = Sunday)')
+        converted = rules
+        converted$start = time2min(converted$start)
+        converted$end = time2min(converted$end)
+    }else{
+        lapply(rules, function(r)
+            if(!is.null(r$days) & !all(r$days %in% 0:6))
+                stop('days must be in 0, 1, ..., 6, (0 = Sunday)'))
+        converted = lapply(rules, function(r){
+            list(start = time2min(r$start),
+                 end   = time2min(r$end),
+                 days = r$days,
+                 tag = r$tag)
+        })
+    }
+    ruletable =to7daybins(converted)
+    return(
+        time_bins_functional (
+            function(t){
+                ## A humanly readable function for defining rush hour only time bins
+                ## returns bins of time
+                day = as.POSIXlt(t)$wday
+                tt = time2min(t)
+                sapply(1:length(t), function(k){
+                    r = ruletable[[day[k] + 1]]
+                    ## weekday Mon-Fri
+                    if(!is.null(unlist(r)))
+                        if(length(r)==1){
+                            if(tt[k] >= r['start'] &  tt[k] < r['end']) return(unlist(r['tag'][[1]]))
+                        }else{
+                            a =which(tt[k] >= r[,'start'] &  tt[k] < r[,'end'])
+                            if(length(a)) return(unlist(r[a,'tag'][[1]]))
+                        }
+                    return("Other")
+                })
+            }
+        )
+    )
+}
+
+
+time_bins_functional<-function(time_bin_readable_function = time_bins_readable , period = c('hours', 'minutes')){
+    ## A functional function that constructs a list with bin names for each hour of
+    ## the week using a humanly readable time function
+    ## time 0 is Sunday 0 to 59 min AM, before 1AM
+    period <- match.arg(period)
+    Sun0 = as.POSIXlt("2018-08-26 00:00:00.1 EDT")
+    if(grepl('hour', period))
+        tslice  = (0:(24*7-1))*3600
+    if(grepl('min', period))
+        tslice  = (0:(24*60*7-1))*60
+    time.bins.per.slice = sapply(tslice, function(r) time_bin_readable_function(Sun0+r))
+    if(period == 'hours'){
+        return(
+            function(t){
+                ## time 0 is Sunday 0 to 59 min AM, before 1AM
+                t = as.POSIXlt(t)
+                time.bins.per.slice[t$hour + 1 + t$wday*24]
+            }
+        )
+    }else{
+        return(
+            function(t){
+                ## time 0 is Sunday 0 to 59 min AM, before 1AM
+                t = as.POSIXlt(t)
+                time.bins.per.slice[t$hour + 1 + t$wday*24 + t$min]
+            }
+        )
+    }
+}
+
 time_bins_readable <- function(t){
     ## A humanly readable function that 
     ## returns bins of time
@@ -21,18 +120,4 @@ time_bins_readable <- function(t){
     })
 }
 
-time_bins_functional<-function(time_bin_readable_function){
-    ## A functional function that constructs a list with bin names for each hour of
-    ## the week using a humanly readable time function
-    ## time 0 is Sunday 0 to 59 min AM, before 1AM
-    Sun0 = as.POSIXlt("2018-08-26 00:00:00.1 EDT")
-    weekhours = 0:(24*7-1)
-    time.bins.per.week.hour = sapply(weekhours, function(r) time_bin_readable_function(Sun0+r*3600))
-    function(t){
-        ## time 0 is Sunday 0 to 59 min AM, before 1AM
-        whour = as.POSIXlt(t)$hour + 1 + (wday(t)-1)*24
-        time.bins.per.week.hour[whour]
-    }
-}
-
-time_bins <- time_bins_functional(time_bins_readable)
+## time_bins <- time_bins_functional()
