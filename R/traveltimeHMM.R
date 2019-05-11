@@ -42,20 +42,12 @@
 #' @export
 traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
                           model = c("HMM", "trip-HMM","trip","no-dependence"),
-                          tol.err = 10, L = 10L, max.it = NULL, ...) {
+                          tol.err = 10, L = 10L, max.it = 20,verbose = FALSE, ...) {
 
     ## #-------------------------------------------------- Testing requirements
     if (length(speeds) != length(trips) || length(speeds) != length(timeBins)) 
         stop("Variables logspeed, trips and timeBins are not equal in length!")
-    
     ## #-------------------------------------------------- warnings for user
-    maxSpeed = 130  # max speed km/h
-    aux = which(speeds > log(maxSpeed/3.6))
-    if (length(aux) > 0) 
-        warning(paste("Many observations are higher than speed limit (130km/h)!, about", 
-            paste0(round(100 * length(aux)/length(speeds), 2), "% of observations."), 
-            " It is advised to remove these observations"),  immediate.=TRUE, call.=FALSE)
-    
     model <- match.arg(model)
     param <- list(...)
     if (grepl("HMM", model) & nQ <= 1) 
@@ -64,6 +56,21 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
         warning('Cannot use nQ > 1 without an HMM, resetting nQ = 1', immediate.=TRUE, call.=FALSE)
         nQ =1
     }
+    ## #-------------------------------------------------- cleaning
+    if(is.null(param$maxSpeed)){
+        message('maxSpeed is not specified, default 130 km/h')
+        maxSpeed = 130  # max speed km/h
+    }else{
+        message('maxSpeed is set to ', param$maxSpeed)
+        maxSpeed = param$maxSpeed
+    }
+    aux = which(speeds > log(maxSpeed/3.6))
+    if (length(aux) > 0) 
+        warning(paste("Many observations are higher than speed limit (130km/h)!, about", 
+            paste0(round(100 * length(aux)/length(speeds), 2), "% of observations."), 
+            " It is advised to remove these observations"),  immediate.=TRUE, call.=FALSE)
+
+    
 
     ## #-------------------------------------------------- setup
     if (!is.factor(trips)) 
@@ -145,14 +152,16 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
     E_new <- E
     probStates <- NULL
     ## Error function
-    error <- function(A, B) if (is.null(A) || is.null(B)) 0 else sum(abs(A - B))
+    error.fun <- function(A, B) if (is.null(A) || is.null(B)) 0 else sum(abs(A - B))
     ## #--------------------------------------------------
     ## Start of simulation
 
     ## Parameter estimation
     iter = 0  # iteration count
     tstart = Sys.time()  # starting time
-    cat("Running model", model, fill=TRUE)
+    ## # -------------------------------------------------- user msg
+    message('Model ', model, ' with ', nTrips, ' trips over ',
+            nlinks, ' roads and ', nB, ' time bins...')
     repeat {
         ## forward-backward
         if (grepl("HMM", model)) {
@@ -238,7 +247,7 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
             B = c(B, initNew[-init_L,], tmatNew[-unique(linksLessMinObs,only_init),])
         }
         if(grepl('trip',model)) { A = c(A, E); B = c(B,E_new)}
-        iter_error = error(A, B)
+        iter_error = error.fun(A, B)
 
         ## re-positioning parameters
         tmat <- tmatNew
@@ -248,19 +257,26 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
         E <- E_new
         iter <- iter + 1
 
-        if(!is.null(max.it) && iter==1)
-            cat('Expected completion of', max.it, 'iterations in', format((max.it-1) * (Sys.time() - tstart), digits = 3), fill=TRUE)
-
-        cat(round(iter_error,2), "error in iteration", iter, "@", format(Sys.time() - tstart, digits = 3), fill=TRUE)
+        if(iter==1 && (!is.null(max.it) || verbose)){
+            if(!is.null(max.it)){
+                message('Expected completion of ', max.it, ' iterations in ',
+                        format((max.it-1) * (Sys.time() - tstart), digits = 3))
+            }else{
+                message('Expected time per iteration ',
+                        format((Sys.time() - tstart), digits = 3))
+            }
+        }
+        if(verbose)
+            message(round(iter_error,2), " error in iteration ", iter, " @ ", format(Sys.time() - tstart, digits = 3))
 
                 
         ## breaking loop on convergence
         if (iter_error <= tol.err) {
-            cat("Parameters converged at iteration" , iter-1, fill=TRUE)
+            message("Parameters converged at iteration " , iter-1)
             break
         }
         if (!is.null(max.it) && iter >= max.it) {
-            cat("Reached maximum number of iterations", fill=TRUE)
+            message("Reached maximum number of iterations")
             break
         }
     }
