@@ -11,7 +11,6 @@ predict.traveltime<-function(object, linkIds, len, starttime,  n=1000, ...){
 }
 
 predict.traveltime.no_dependence <- function(object, linkIds, len, starttime, n = 1000, ...) {
-    
     param = list(...)
     ## sampling E (trip-effect)
     if(!is.null(param$E) && is.numeric(param$E)){
