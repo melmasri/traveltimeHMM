@@ -14,8 +14,9 @@ predict.traveltime.no_dependence <- function(object, linkIds, len, starttime, n 
     
     param = list(...)
     ## sampling E (trip-effect)
-    if(!is.null(param$E) && is.numeric(param$E)) E = param$E
-    else if(grepl('trip', object$model))
+    if(!is.null(param$E) && is.numeric(param$E)){
+        E = param$E
+    }else if(grepl('trip', object$model))
         E = rnorm(n, mean = 0, sd = object$tau) else E = 0
     
     fact = paste(linkIds[1], time_bins(starttime), sep = ".")
