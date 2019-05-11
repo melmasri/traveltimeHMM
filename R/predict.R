@@ -36,8 +36,9 @@ predict.traveltime.no_dependence <- function(object, linkIds, len, starttime, n 
 predict.traveltime.HMM <- function(object, linkIds, len, starttime, n = 1000, ...) {
     ## sampling E (trip-effect)
     param = list(...)
-    if(!is.null(param$E) && is.numeric(param$E)) E = param$E
-    else if(grepl('trip', object$model))
+    if(!is.null(param$E) && is.numeric(param$E)){
+        E = param$E
+    }else if(grepl('trip', object$model))
         E = rnorm(n, mean = 0, sd = object$tau) else E = 0
     nQ = object$nQ
     id = which(levels(object$factors) == paste(linkIds[1], time_bins(starttime), 
