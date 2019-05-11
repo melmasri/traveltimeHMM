@@ -9,6 +9,7 @@ devtools::install_github("melmasri/traveltimeHMM")
 
 # for an example
 ```R
+library(traveltimeHMM)
 data(trips)
 ?traveltimeHMM  # for help
 fit <- traveltimeHMM(trips$logspeed, trips$trip, trips$timeBin, trips$linkId, nQ = 2, max.it = 20)
