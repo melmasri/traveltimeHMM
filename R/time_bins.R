@@ -16,6 +16,7 @@ to7daybins <-function(rules){
     }
     return(wdayrules)
 }
+
 #' @export
 rules2timebins<-function(rules){
     time2min <- function(t){

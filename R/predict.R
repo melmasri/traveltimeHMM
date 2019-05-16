@@ -1,18 +1,27 @@
 
 #' @export
-predict.traveltime<-function(object, linkIds, len, starttime,  n=1000, ...){
+predict.traveltime<-function(object, data, starttime = Sys.time(),  n=1000, ...){
+    if(!is.list(data))
+        stop('data must be a list, data.fram or data.table')
+    if(!all(c('linkId', 'length') %in% names(data)))
+        stop('data must have objects named linkId and length, corresponding order of travelled links and their lengths')
+    if(length(data$linkId)!=length(data$length))
+        stop('length of objects do not match!')
+    
     if(object$model == 'no-dependence')
-        return(predict.traveltime.no_dependence(object, linkIds, len , starttime, n, ...))
+        return(predict.traveltime.no_dependence(object, data , starttime, n, ...))
     
     if(object$model =='trip')
-        return(predict.traveltime.no_dependence(object, linkIds, len , starttime, n, ...))
+        return(predict.traveltime.no_dependence(object, data , starttime, n, ...))
     
     if(grepl('HMM', object$model))
-        return(predict.traveltime.HMM(object, linkIds, len, starttime, n, ...))
+        return(predict.traveltime.HMM(object, data, starttime, n, ...))
 }
 
-predict.traveltime.no_dependence <- function(object, linkIds, len, starttime, n = 1000, ...) {
+predict.traveltime.no_dependence <- function(object, data, starttime, n = 1000, ...) {
     param = list(...)
+    linkIds = data$linkId
+    len = data$length
     ## sampling E (trip-effect)
     if(!is.null(param$E) && is.numeric(param$E)){
         E = param$E
@@ -34,9 +43,11 @@ predict.traveltime.no_dependence <- function(object, linkIds, len, starttime, n 
 }
 
 
-predict.traveltime.HMM <- function(object, linkIds, len, starttime, n = 1000, ...) {
+predict.traveltime.HMM <- function(object, data, starttime, n = 1000, ...) {
     ## sampling E (trip-effect)
     param = list(...)
+    linkIds = data$linkId
+    len = data$length
     if(!is.null(param$E) && is.numeric(param$E)){
         E = param$E
     }else if(grepl('trip', object$model))

@@ -282,16 +282,18 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
     }
     
     ## returning variables
-    invisible(list(factors = linkTimeFactor,
-                   trip = trips,
-                   tmat = tmat,
-                   init = init,
-                   sd = sqrt(var_speed),
-                   mean = mu_speed,
-                   tau  = sqrt(tau2),
-                   E = E,
-                   nQ = nQ,
-                   nB = nB,
-                   nObs = nObs,
-                   model = model))
+    obj <- list(factors = linkTimeFactor,
+                trip = trips,
+                tmat = tmat,
+                init = init,
+                sd = sqrt(var_speed),
+                mean = mu_speed,
+                tau  = sqrt(tau2),
+                E = E,
+                nQ = nQ,
+                nB = nB,
+                nObs = nObs,
+                model = model)
+    class(obj) <- append(class(obj),"traveltime")
+    invisible(obj)
 }
