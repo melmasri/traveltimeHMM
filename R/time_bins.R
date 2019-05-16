@@ -16,7 +16,7 @@ to7daybins <-function(rules){
     }
     return(wdayrules)
 }
-
+#' @export
 rules2timebins<-function(rules){
     time2min <- function(t){
         s = as.POSIXlt(t, format = "%H:%M")
@@ -67,7 +67,7 @@ rules2timebins<-function(rules){
     )
 }
 
-
+#' @export
 time_bins_functional<-function(time_bin_readable_function = time_bins_readable , period = c('hours', 'minutes')){
     ## A functional function that constructs a list with bin names for each hour of
     ## the week using a humanly readable time function
@@ -120,4 +120,4 @@ time_bins_readable <- function(t){
     })
 }
 
-## time_bins <- time_bins_functional()
+time_bins <- time_bins_functional()

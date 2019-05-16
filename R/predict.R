@@ -1,4 +1,5 @@
 
+#' @export
 predict.traveltime<-function(object, linkIds, len, starttime,  n=1000, ...){
     if(object$model == 'no-dependence')
         return(predict.traveltime.no_dependence(object, linkIds, len , starttime, n, ...))
