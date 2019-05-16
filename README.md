@@ -7,7 +7,7 @@ install.packages("devtools")
 devtools::install_github("melmasri/traveltimeHMM", auth_token = 'get an Auth_token') # this is for privacy measure
 ##devtools::install_github("melmasri/traveltimeHMM")
 ```
-To get an auth_token see (this)[https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line]
+To get an auth_token see [this](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line).
 
 # for an example
 ```R
