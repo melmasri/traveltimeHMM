@@ -6,7 +6,7 @@
 \usage{
 traveltimeHMM(speeds, trips, timeBins, linkIds, nQ = 1L,
   model = c("HMM", "trip-HMM", "trip", "no-dependence"), tol.err = 10,
-  L = 10L, max.it = NULL, ...)
+  L = 10L, max.it = 20, verbose = FALSE, ...)
 }
 \arguments{
 \item{speeds}{A numeric vector of speed observations on the log-scale.}

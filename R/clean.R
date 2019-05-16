@@ -196,9 +196,9 @@ cleanGPS_trip <-function(trip,
     return(list(trip = trip, trip_id = trip_id, tag='clean'))
 }
 
-trips[, timestamp :=time]
-trips[, roadId:=id]
-trips[, ':='(time=NULL, id=NULL)]
-trip= trips[trip==2690]
-a=  cleanGPS_trip(trip, trip_id = 2690, verbose= FALSE)
+## trips[, timestamp :=time]
+## trips[, roadId:=id]
+## trips[, ':='(time=NULL, id=NULL)]
+## trip= trips[trip==2690]
+## a=  cleanGPS_trip(trip, trip_id = 2690, verbose= FALSE)
 
