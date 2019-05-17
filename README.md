@@ -1,5 +1,6 @@
 # traveltimeHMM
 Travel time prediction from GPS points using an HMM.
+# eric was here
 
 # Installation
 ```
