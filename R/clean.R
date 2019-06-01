@@ -2,33 +2,52 @@
 #'
 #'
 #' @details Cleans raw GPS data by removing trips with outside the indicated parameters.
+#' @export
+cleanGPS_trip<-function(trip,trip_id= NULL,verbose= FALSE, ...){
+    listed_trip = cleanGPS_trip_internal(trip,trip_id,verbose, ...)
+    ## to flatten the list
+    ## listed_trip comes as a tree and the unlist_trip makes it just a one level tree
+    ## Flatten it
+    unlist_trip<-function(a){
+        new_list  = list()
+        unlist_<-function(L){
+            if(length(L)==0) return(NULL)
+            if(!is.null(L$tag)){
+                new_list[[length(new_list)+1]]<<-L
+                return(NULL)
+            }
+            if(!is.null(L[[1]]$tag)){
+                new_list[[length(new_list)+1]]<<-L[[1]]
+                L[[1]]<-NULL
+                unlist_(L)
+            }else{
+                if(length(L)>1){
+                    list(unlist_(L[[1]]),unlist_(L[-1]))
+                }else{
+                    unlist_(L[[1]])
+                }
+            }
+        }
+        x = unlist_(a)
+        return(new_list)
+    }
+    flat = unlist_trip(listed_trip)
+    return(flat)
+}
 
-cleanGPS_trip <-function(trip,
-                         trip_id= NULL,
-                         min.gps.obs = 50,
-                         max.idle.time = 4,
-                         max.time.between.gps =  120,
-                         min.speed  = 5,
-                         median.speed = 20,
-                         minmax.speed = 30,
-                         min.distance = 1000,
-                         min.endpoint.speed = 10,
-                         tag = NULL,
-                         verbose = FALSE
-                         ){
+cleanGPS_trip_internal<-function(trip,trip_id= NULL,verbose= FALSE, ...){
     ## ##################################################
     ## ### Input parameters
     ## ##################################################
     ## min.gps.obs = 50                 # in units
     ## max.idle.time = 4                # mins
-    ## median.speed  = 20               # k/h
-    ## min.max.speed = 35               # k/h
+    ## median.speed  = 20               # km/h
+    ## min.max.speed = 35               # km/h
     ## min.distance = 1000              # meters
-    ## min.speed = 5                    # k/h
+    ## min.speed = 5                    # km/h
     ## max.time.between.gps = 120       # sec
-    ## min.endpoint.speed  = 10         # k/h
+    ## min.endpoint.speed  = 10         # km/h
     ## ##################################################
-
     ## #-------------------------------------------------- flow of cleaning
     ## 1. order trips by trip and timestamp
     ## 2. calculate estimated speed and consecutive location distance
@@ -37,7 +56,19 @@ cleanGPS_trip <-function(trip,
     ## 5. decompose trips with idle time larger than max.idle.time, return to 1.
     ## 6. decompose trips with time difference larger than max.time.between.gps, return to 1.
     ## 7. return if clean
+    
+    arg = list(...)
+    min.gps.obs =  if(is.null(arg$min.gps.obs)) 50 else arg$min.gps.obs
+    max.idle.time = if(is.null(arg$max.idle.time)) 4 else arg$max.idle.time
+    max.time.between.gps = if(is.null(arg$max.time.between.gps)) 120 else arg$max.time.between.gps
+    min.speed  = if(is.null(arg$min.speed)) 5 else arg$min.speed
+    median.speed = if(is.null(arg$median.speed)) 20 else arg$median.speed
+    minmax.speed = if(is.null(arg$minmax.speed)) 35 else arg$minmax.speed
+    min.distance = if(is.null(arg$min.distance)) 1000 else arg$min.distance
+    min.endpoint.speed =if(is.null(arg$min.endpoint.speed)) 10 else arg$min.endpoint.speed
+        
     comment = NULL
+    tag = NULL
     ## #-------------------------------------------------- required functions
     require(geosphere)
     require(data.table)
@@ -89,38 +120,12 @@ cleanGPS_trip <-function(trip,
         comment = 'a single observation trip, please remove!'
         if(verbose)   warning(comment)
         trip[, ':='(geoDist=NULL, speedEst=NULL, location=NULL)]
-        return(list(trip = trip,trip_id = trip$roadId, tag = 'dirty', comment = comment))
+        return(list(trip = trip,trip_id = trip_id, tag = 'dirty', comment = comment))
     }
 
-    ## #-------------------------------------------------- removing based on median speed
-    if(!is.null(median.speed) && !is.null(minmax.speed)){
-        if(verbose)
-            message('Removing trips with median estimated speed <', median.speed, 'k/h or max speed <', minmax.speed, 'k/h.')
-        
-        aux = trip[speedEst>0, median(speedEst) >= median.speed & max(speed) >= minmax.speed]
-        if(!aux){
-            comment = 'Median speed and max speed are low!'
-            if(verbose) warning(comment)
-            trip[, ':='(geoDist=NULL, speedEst=NULL, location=NULL)]
-            return(list(trip = trip, trip_id = trip_id,tag='dirty', comment = comment))
-        }
-    }
-    ## #-------------------------------------------------- min.distance
-    ## removing trips short driving distance
-    if(!is.null(min.distance)){
-        ## preliminary cleaning
-        if(verbose)
-            message('removing if driving distance less than ', min.distance, 'm.' )
-        aux  =trip[, max(location) - min(location)> min.distance]
-        if(!aux){
-            comment = 'trip shorter then min distance!'
-            if(verbose) warning(comment)
-            trip[, ':='(geoDist=NULL, speedEst=NULL, location=NULL)]
-            return(list(trip = trip, trip_id = trip_id,tag='dirty', comment = comment))
-        }
-    }
+
     ## #--------------------------------------------------
-    ## decomposing trips
+    ## decomposing trips based on max.idle.time
     groups_<-function(r){
         if(length(r)==1) return(1)
         aux = which(diff(r)>1)
@@ -149,14 +154,11 @@ cleanGPS_trip <-function(trip,
                 if(a[length(a)]!=nrow(trip)) a = c(a,nrow(trip))
                 a = rep(1:(length(a)-1), diff(a))
                 trip[, reluId:=NULL]
-                trip[, g:=a]
+                g = a
                 tag = 'D'
-                return(trip[,.(cleanGPS_trip(.SD,
-                                             trip_id= paste0(trip_id,tag,g[1]),
-                                             min.gps.obs,max.idle.time,max.time.between.gps,
-                                             min.speed,median.speed,minmax.speed,
-                                             min.distance,
-                                             min.endpoint.speed)) , by =g]
+                return(tapply(1:nrow(trip), g, function(r)
+                    cleanGPS_trip(trip[r], paste0(trip_id, tag, g[r[1]]),verbose, ...)
+                              )
                        )
             }
         }
@@ -175,21 +177,45 @@ cleanGPS_trip <-function(trip,
                 ind[1:i] = ind[1:i]-1
             return(ind)
         }
-        trip[ , g := groups.per.time.diff(timestamp)]
-        if(max(trip$g)>1){
+        g = groups.per.time.diff(trip$timestamp)
+        if(max(g)>1){
             tag = 'D'
             return(
-                trip[,.(cleanGPS_trip(.SD,
-                                      trip_id= paste0(trip_id,tag,g[1]),
-                                      min.gps.obs,max.idle.time,max.time.between.gps,
-                                      min.speed,median.speed,minmax.speed,
-                                      min.distance,
-                                      min.endpoint.speed)) , by =g]
+                return(tapply(1:nrow(trip), g, function(r)
+                    cleanGPS_trip(trip[r], paste0(trip_id, tag,g[r[1]]),verbose, ...)
+                              )
+                       )
             )
             if(verbose)
                 message('number of trips to be decomposed ',nrow(aux) , ' trips.')
         }
-        trip[, g:=NULL]
+    }
+    ## #-------------------------------------------------- removing based on median speed
+    if(!is.null(median.speed) && !is.null(minmax.speed)){
+        if(verbose)
+            message('Removing trips with median estimated speed <', median.speed, 'km/h or max speed <', minmax.speed, 'km/h.')
+        
+        aux = trip[speedEst>0, median(speedEst) >= median.speed & max(speedEst) >= minmax.speed]
+        if(!aux){
+            comment = 'Median or max speed are low!'
+            if(verbose) warning(comment)
+            trip[, ':='(geoDist=NULL, speedEst=NULL, location=NULL)]
+            return(list(trip = trip, trip_id = trip_id,tag='dirty', comment = comment))
+        }
+    }
+    ## #-------------------------------------------------- min.distance
+    ## removing trips short driving distance
+    if(!is.null(min.distance)){
+        ## preliminary cleaning
+        if(verbose)
+            message('removing if driving distance less than ', min.distance, 'm.' )
+        aux  =trip[, max(location) - min(location)> min.distance]
+        if(!aux){
+            comment = 'trip shorter then min distance!'
+            if(verbose) warning(comment)
+            trip[, ':='(geoDist=NULL, speedEst=NULL, location=NULL)]
+            return(list(trip = trip, trip_id = trip_id,tag='dirty', comment = comment))
+        }
     }
     trip[, ':='(geoDist=NULL, speedEst=NULL, location=NULL)]
     ## #-------------------------------------------------- clean stage
