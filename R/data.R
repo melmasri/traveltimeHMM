@@ -13,4 +13,4 @@
 #'   \item{time}{the first observed GPS timestamp on the corresponding linkId of that trip}
 #' }
 #' @source NULL
-"trips"
+"tripset"

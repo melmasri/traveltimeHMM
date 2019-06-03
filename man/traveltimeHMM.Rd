@@ -4,12 +4,13 @@
 \alias{traveltimeHMM}
 \title{\code{traveltimeHMM} estimates trips and link specific speed parameters from observed average speeds per unique trip and link.}
 \usage{
-traveltimeHMM(speeds, trips, timeBins, linkIds, nQ = 1L,
+traveltimeHMM(logspeeds, trips, timeBins, linkIds, nQ = 1L,
   model = c("HMM", "trip-HMM", "trip", "no-dependence"), tol.err = 10,
-  L = 10L, max.it = 20, verbose = FALSE, ...)
+  L = 10L, max.it = 20, verbose = FALSE, maxSpeed = NULL,
+  seed = NULL, transition_matrix = NULL, initial_state_values = NULL)
 }
 \arguments{
-\item{speeds}{A numeric vector of speed observations on the log-scale.}
+\item{logspeeds}{A numeric vector of speed observations (in km/h) on the (natural) log-scale.}
 
 \item{trips}{An integer or character vector of trip ids for each observation of \code{speed}.}
 
@@ -26,7 +27,9 @@ traveltimeHMM(speeds, trips, timeBins, linkIds, nQ = 1L,
 
 \item{L}{An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the parameter for, \code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.}
 
-\item{max.it}{An Integer for the maximum number of iterations to run for, default = \code{NULL}.}
+\item{max.it}{An integer for the maximum number of iterations to run for, default = \code{NULL}.}
+
+\item{maxSpeed}{A float for the maximum speed in km/h, on the linear scale (not the log-scale, unlike for \code{logspeeds}).}
 
 \item{...}{extra specific parameters, see details}
 }
@@ -51,11 +54,11 @@ traveltimeHMM(speeds, trips, timeBins, linkIds, nQ = 1L,
 }
 \examples{
 \dontrun{
-data(trips)
+data(tripset)
 ?traveltimeHMM  # for help
-fit <- traveltimeHMM(trips$logspeed, trips$trip, trips$timeBin, trips$linkId, nQ = 2, max.it = 20)
-single_trip <- subset(trips, trip==2700)
-pred <- predict.traveltime(fit, single_trip$linkId, single_trip$length,single_trip$time[1])
+fit <- traveltimeHMM(tripset$logspeed, tripset$trip, tripset$timeBin, tripset$linkId, nQ = 2, max.it = 2)
+single_trip <- subset(tripset, trip==2700)
+pred <- predict.traveltime(fit, single_trip,single_trip$time[1])
 hist(pred)      # histogram of prediction samples
 mean(pred)      # travel time point estimate
 sum(single_trip$traveltime)    # observed traveltime
