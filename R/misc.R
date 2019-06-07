@@ -5,7 +5,6 @@ normalizeC <- function(x) x/.colSums(x, m = length(x), n = 1)  # a much faster v
 
 normalizeR <- function(x, m, n) x/.rowSums(x, m, n)  # normalize a matrix (m X n) by rowSums
 
-
 order_states <- function(param) {
     ## ordering of estimates parameters per state, to force an ordering in the HMM
     ## param : n x Q matrix, where Q is the number of states return : n x Q where for

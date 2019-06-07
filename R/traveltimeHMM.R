@@ -1,20 +1,34 @@
-#' \code{traveltimeHMM} estimates trips and link specific speed parameters from observed average speeds per unique trip and link.
+#' Estimate trip- and link- specific speed parameters from observed average speeds.
+#' 
+#' \code{traveltimeHMM} estimates trip- and link- specific speed parameters from observed average speeds per unique trip and link.
 #'
 #' @param logspeeds A numeric vector of speed observations (in km/h) on the (natural) log-scale.
 #' @param trips An integer or character vector of trip ids for each observation of \code{speed}.
 #' @param timeBins A character vector of time bins for each observation of \code{speed}.
 #' @param linkIds A vector of link ids (route or way) for each observation of \code{speed}.
-#' @param nQ Integer number of states, default is \code{1}.
+#' @param nQ Integer number of states, \code{default = 1}.
 #' @param model Type of model as string, \code{trip-HMM} to use a hidden Markov model (HMM) with trip effect, \code{HMM} (default) is an HMM without trip effect,
-#' \code{trip} is trip effect model without HMM, and \code{no-dependence} is model with link specific parameter only without an HMM nor a trip effect.
-#' @param tol.err A numeric variable representing the level of tolerable distance between parameter estimates from consecutive iterations.
-#' @param L An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the parameter for, \code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.
-#' @param max.it An integer for the maximum number of iterations to run for, default = \code{NULL}.
-#' @param maxSpeed A float for the maximum speed in km/h, on the linear scale (not the log-scale, unlike for \code{logspeeds}).
-#' @param ... extra specific parameters, see details
+#'   \code{trip} is trip effect model without HMM, and \code{no-dependence} is model with link specific
+#'   parameter only without an HMM nor a trip effect.
+#' @param tol.err A numeric variable representing the level of tolerable distance between parameter estimates from consecutive iterations,
+#'   \code{default = 10}.
+#' @param L An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the parameter for,
+#'   \code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.
+#' @param max.it An integer for the maximum number of iterations to run for, \code{default = 20}.
+#' @param verbose A boolean that triggers verbose output, \code{default = FALSE}.
+#' @param max.speed An optional float for the maximum speed in km/h, on the linear scale
+#'   (not the log-scale, unlike for \code{logspeeds}), \code{defaut = NULL} which
+#'   in practice results in a maximum speed of 130 km/h.
+#' @param seed An optional float for the seed used for the random generation of the first Markov transition matrix
+#'   and initial state vector, \code{default = NULL}.  If not provided, then those objects are generated deterministically.
+#'   The effect of \code{seed} is cancelled by tmat.p or init.p when provided.
+#' @param tmat.p An optional Markov transition matrix (big 'gamma'), i.e. a \code{nQ x nQ}
+#'   matrix with rows summing to \code{1}, \code{defaut = NULL}
+#' @param init.p An optional Markov initial state vector (small 'gamma')
+#'   of size \code{nQ} with elements summing to \code{1}, \code{default = NULL}.
 #' @details NULL
 #' 
-#' @return \code{traveltimeHMM} returns a list of the following parameters
+#' @return \code{traveltimeHMM} returns a list of the following parameters:
 #' 
 #' \item{factors}{a factor of interactions (linkId x timeBin) with the same length of observations, and with levels corresponding to unique factors}
 #' \item{trip}{a factor of trips.}
@@ -27,7 +41,7 @@
 #' \item{nQ}{an integer number of states.}
 #' \item{nB}{an integer number of unique time bins.}
 #' \item{nObs}{an integer number of observations.}
-#' \item{model}{the type of model used.}
+#' \item{model}{a character string corresponding to the type of model used.}
 #'
 #' @examples
 #' \dontrun{
@@ -40,12 +54,17 @@
 #' mean(pred)      # travel time point estimate
 #' sum(single_trip$traveltime)    # observed traveltime
 #' }
+#' 
+#' @references
+#' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
+#'
+
 #' @export
 traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
                           model = c("HMM", "trip-HMM","trip","no-dependence"),
                           tol.err = 10, L = 10L, max.it = 20,verbose = FALSE,
-                          maxSpeed = NULL, seed = NULL, transition_matrix = NULL,
-                          initial_state_values = NULL) {
+                          max.speed = NULL, seed = NULL, tmat.p = NULL,
+                          init.p = NULL) {
 
     # SECTION A - Parameter validation and related processing
     
@@ -81,16 +100,16 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
         nQ <- 1
     }
     
-    # A.4 Parameter 'maxSpeed'
+    # A.4 Parameter 'max.speed'
     # Set default value if not specified in call
-    if(is.null(maxSpeed)){
-        message('maxSpeed is not specified, setting at default value: 130 km/h')
-        maxSpeed = 130
+    if(is.null(max.speed)){
+        message('max.speed is not specified, setting at default value: 130 km/h')
+        max.speed = 130
     }
     
-    # We count occurrences of speeds in excess of maxSpeed.  If any, we then
+    # We count occurrences of speeds in excess of max.speed.  If any, we then
     # report the percentage of such occurrences in a warning to the user.
-    speedings = which(logspeeds > log(maxSpeed/3.6))
+    speedings = which(logspeeds > log(max.speed/3.6))
     if (length(speedings) > 0) 
         warning(paste("Many observations are higher than speed limit (130km/h)!, about", 
             paste0(round(100 * length(speedings)/length(logspeeds), 2), "% of observations."), 
@@ -121,7 +140,7 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
     linksLessMinObs = which(nFactors < L) # vector of indices of all factors for which we need to impute 
     indexLinksLessMinObs = sapply(gsub("[0-9.]+", "", names(linksLessMinObs)), function(r) which(r == 
         levels(timeFactor))) # vector of all timeBins with counts of occurrences of the corresponding linkTimeFactor...
-                             # We need to discuss this one.  ÉG 2019/06/03
+                             # REWRITE COMMENT.  ÉG 2019/06/05
     
     # Taking into account the initial state observation (initial occurrence) for each link for each time bin...
     init_ids <- seq_along(trips)[!duplicated(trips)]  # vector of indices of the initial state observation for each trip
@@ -132,8 +151,7 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
     init_L <- which(count_init < L) # vector of indices of all linkTimeFactors with insufficient occurrences
     index_init_L <- sapply(gsub("[0-9.]+", "", names(init_L)),function(r) which(r == levels(timeFactor))) # vector of counts
                                                                                    # of occurrences for each timeBin
-                                                                                   # below L occurrences.  To be discusse.
-                                                                                   # ÉG 2019/06/03
+                                                                                   # below L occurrences.  REWRITE COMMENT.  ÉG 2019/06/05
     
     ## finding the number of factors (link x timeBin) that have only initial states,
     ## i.e cannot compute P(state_{k-1}, state_k | Obs})
@@ -159,7 +177,7 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
     # init refers to small 'gamma' whilst tmat refers to big 'gamma'.
     
     # default initial values init.0 and tmat.0
-    # WARNING: those values might be superseded, see later.  To be discussed.  ÉG 2019/06/03
+    # WARNING: those values might be superseded, see later.  
     init.0 <- rep(1,nQ)/nQ
     tmat.0 <-rep(rep(1, nQ)/nQ, nQ)
     
@@ -171,17 +189,17 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
         tmat.0 <- c(t(tmat.0/rowSums(tmat.0))) # normalizes each row and transforms into vector
     }
     # Here we attempt to supersede the value for the transition matrix if one is passed
-    if(!is.null(transition_matrix)){
-        if(is.matrix(transition_matrix) && dim(transition_matrix) == c(nQ, nQ) && rowSums(transition_matrix) == rep(1,nQ)){
-            tmat.0 <- c(t(transition_matrix))
+    if(!is.null(tmat.p)){
+        if(is.matrix(tmat.p) && dim(tmat.p) == c(nQ, nQ) && rowSums(tmat.p) == rep(1,nQ)){
+            tmat.0 <- c(t(tmat.p))
         }else
             warning('Initial transition values are not used, tmat must be nQ x nQ with rows summing to 1', immediate.=TRUE, call.=FALSE)
     }
     
     # Here we attempt to supersede the value for the initial state vector if one is passed
-    if(!is.null(initial_state_values)){
-        if(length(initial_state_values) == nQ && sum(initial_state_values) == 1){
-            init.0 <- initial_state_values
+    if(!is.null(init.p)){
+        if(length(init.p) == nQ && sum(init.p) == 1){
+            init.0 <- init.p
         }else
             warning('Initial state values are not used, init must be of length nQ and sum to 1', immediate.=TRUE, call.=FALSE)
     }
@@ -202,38 +220,52 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
     # otherwise each Ei has a value of zero.
     if(grepl('trip', model)) E <- rnorm(nTrips, 0, sqrt(tau2)) else E <- numeric(nTrips)
     
+    ###
+    # Beginning implementation of Algorithm 1 (which we call Algo1 hereafter) in Woodard et al.
+    #
     ## Initialize variables - TO DOCUMENT FURTHER - ÉG 2019/06/03
+    iter = 0  # t = 0 in step 1 of Algo1
+
     initNew <- tmatNew <- mu_speedNew <- var_speedNew <- probStates <- NULL
     E_new <- E
-    iter = 0  # iteration count
     tstart = Sys.time()  # starting time
     
-    ## Definition of error function as the absolute value of the difference between both parameters
-    error.fun <- function(A, B) if (is.null(A) || is.null(B)) 0 else sum(abs(A - B))
+    # Definition of error function as the absolute value of the difference between both parameters.
+    # This will serve to evaluate the exit criteria from the while loop below.
     
-    ###
-    # Start of simulation
-    # This corresponda to Algorithm 1 (which we call Algo1 hereafter) in Woodard et al.
-    ###
+    error.fun <- function(A, B) if (is.null(A) || is.null(B)) 0 else sum(abs(A - B))
     
     # Message to user:
     message('Model ', model, ' with ', nTrips, ' trips over ',
             nlinks, ' roads and ', nB, ' time bins...')
     
-    repeat {
-        if (grepl("HMM", model)) { 
-            probTran = tmat[obsId, ] * pmax(dnorm(logspeeds, E[tripId] + mu_speed[obsId,], var_speed[obsId, ]), 0.001)[, rep(1:nQ, nQ)]
+    repeat { # beginning of while loop at step 2 of Algo1
+        if (grepl("HMM", model)) { # execute this block only if model is "HMM" or "trip-HMM"
+          
+            # probTran is an nObs x nQ^2 matrix having each row represent P(Obs_k | state_k ) * P(state_k | state_{k-1}).
+            # Each row of probTran is such that matrix(probTran[1,], ncol=nQ, nrow=nQ, byrow =TRUE) is the probability
+            # above in matrix format.  See documentation for 'forwardback'. 
+            probTran = tmat[obsId, ] * pmax(dnorm(logspeeds, E[tripId] + mu_speed[obsId,],
+                                                  var_speed[obsId, ]), 0.001)[, rep(1:nQ, nQ)]
+            
+            # fb is a list of alpha and beta (respectively forward and backward probability row-wise vectors,
+            # corresponding to vector 'fv' and a vector of 'b's).
+            # Function 'forwardback' is called once for each trip ID with a subset of probTran
+            # as first argument, and a specific value of initQ as second argument.     
             fb = tapply(1:nObs, trips, function(r)
                 forwardback(probTran[r,], init[obsId[r[1]], ]))
             
-            ## probability of each state per observation
+            # We extract alpha and beta.
             alpha = matrix(unlist(lapply(fb, function(r) r$alpha), use.names = FALSE), 
                 ncol = nQ, byrow = TRUE)  # forward prob. normalized
             beta = matrix(unlist(lapply(fb, function(r) r$beta), use.names = FALSE), 
                 ncol = nQ, byrow = TRUE)  # backward prob. normalized
-            probStates = normalizeR(alpha * beta + 1e-05, m = nObs, n = nQ)  # smoothed and normalized prob
             
-            ## calculating initial state probability
+            # We get the elementary product of alpha and beta (thus smoothing), then normalize by row.
+            # The new matrix 'probStates' corresponds to phi_i,k(q) at step 3 of Algo1.
+            probStates = normalizeR(alpha * beta + 1e-05, m = nObs, n = nQ)
+            
+            ## We calculate the initial state probability.
             initNew = initial_est(probStates, linkTimeFactor, init_ids)
             if (length(index_init_L)) {
                 init_impute = initial_est(probStates, timeFactor, init_ids)
