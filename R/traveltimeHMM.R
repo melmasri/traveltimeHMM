@@ -95,7 +95,8 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
     ## which links (factors) with less than L
     indexLinksLessMinObs = NULL
     linksLessMinObs = which(nFactors < L)
-    indexLinksLessMinObs = sapply(gsub("[0-9.]+", "", names(linksLessMinObs)), function(r) which(r == 
+    ## "^[^.]+.", from start of line ^, remove everything by a dot [^.], up to the .
+    indexLinksLessMinObs = sapply(gsub("^[^.]+.", "", names(linksLessMinObs)), function(r) which(r == 
         levels(timeFactor)))
     
     ## finding the number of initial state observations per link x timeBin
@@ -104,12 +105,12 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
     
     ## finding the number of factors (link x timeBin) < L initial observations
     init_L <- which(count_init < L)      
-    index_init_L <- sapply(gsub("[0-9.]+", "", names(init_L)),function(r) which(r == levels(timeFactor)))
+    index_init_L <- sapply(gsub("^[^.]+.", "", names(init_L)),function(r) which(r == levels(timeFactor)))
     
     ## finding the number of factors (link x timeBin) that have only initial states,
     ## i.e cannot compute P(state_{k-1}, state_k | Obs})
     only_init = which(sapply(split(1:nObs, linkTimeFactor), length) == count_init)
-    index_only_init = sapply(gsub("[0-9.]+", "", names(only_init)),function(r) which(r == levels(timeFactor)))
+    index_only_init = sapply(gsub("^[^.]+.", "", names(only_init)),function(r) which(r == levels(timeFactor)))
     
     ## #-------------------------------------------------- variable holders
     ## speed variables
