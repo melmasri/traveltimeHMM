@@ -19,21 +19,58 @@
 
 
 forwardback <- function(probTran, initQ) {
-    fwd <- function(prob, i) normalizeC(.rowSums(probTran[i, ] * prob[indf], m = nQ, 
-        n = nQ))
-    bwd <- function(i, prob) normalizeC(.colSums(probTran[i, ] * prob[indb], m = nQ, 
-        n = nQ))
+  
+    # 'fwd' corresponds to the FORWARD function as defined in Eq. 15.5 of Russell and Norvig's book.
+    # Argument 'prob' corresponds to fv[i-1] of figure 15.4 in the book, i.e. a single forward message
+    # vector of dimension nQ for the steps up to the previous one. Argument 'i' is an integer which
+    # represents an observation ID. Output corresponds to 'fv[i]', i.e. a single forward message vector
+    # of dimension nQ.
+    # 
+    # WARNING: the function depends on the values of probTran, indf and nQ which are defined
+    # one level above and ARE NOT passed as parameters.  This is suboptimal but necessary due
+    # to the fact that fwd is called by the Reduce function which has strict requirements
+    # on the function's interface.
+  
+    fwd <- function(prob, i) {
+      return(normalizeC(.rowSums(probTran[i, ] * prob[indf], m = nQ, 
+        n = nQ))) # Normalize by column.  This implementation is quite different from that in the paper,
+                  # where some interaction happens between fv[i] and b.  ÉG 2019/06/10.
+    }
+
+    # 'bwd' corresponds to the BACKWARD function as defined in Eq. 15.9 of Russell and Norvig.  Arguments are reversed
+    # (relative to 'fwd' and also to the paper) because of the call by Reduce with option 'right = TRUE'.
+    # Argument 'prob' corresponds to b of figure 15.4 in the book, i.e. a single backward message
+    # vector of dimension nQ for the steps down to the next one. Argument 'i' is an integer which
+    # represents an observation ID. Output corresponds to 'b' a single backward message vector
+    # of dimension nQ.
+    # 
+    # WARNING: the function depends on the values of probTran, indb and nQ which are defined
+    # one level above and ARE NOT passed as parameters.  This is suboptimal but necessary due
+    # to the fact that fwd is called by the Reduce function which has strict requirements
+    # on the function's interface.
+    #
+    # QUESTION: 'bwd' does NOT make use of 'fv' from 'fwd' unlike in the paper.  The interaction between 'fv' and 'b'
+    # seem to occur outside of function forwardback.
+    
+    bwd <- function(i, prob) {
+      return(normalizeC(.colSums(probTran[i, ] * prob[indb], m = nQ, 
+        n = nQ))) # TO DO: check that it does what is intended.  WHY do we want to normalize on BWD?
+    }
+    
     n = length(probTran)
-    nQ = length(initQ)
-    Obs = n/nQ^2
+    nQ = length(initQ) # Corresponds to the number of states
+    Obs = n/nQ^2 # probTrans has dimensions [n/nQ^2, nQ^2], so Obs is the number of its rows.
+    
+    # 'indb' and 'indf' are used in the workings of functions 'fwd' and 'bwd'.
     indb = rep(1:nQ, nQ)
     indf = rep(1:nQ, each = nQ)
+
+    # We make sure that probTran has the form of a matrix, and adjust accordingly.
     if (!is.matrix(probTran)) 
         probTran = matrix(probTran, ncol = nQ^2, byrow = TRUE)
-    ## probTranList = lapply(split(probTran, 1:Obs), function(r) matrix(r, ncol=nQ,
-    ## nrow=nQ, byrow=TRUE))
-    list(alpha = unlist(Reduce(fwd, 1:Obs, init = initQ, acc = TRUE)[-1], use.names = FALSE), 
+
+    return(list(alpha = unlist(Reduce(fwd, 1:Obs, init = initQ, acc = TRUE)[-1], use.names = FALSE), 
         beta = unlist(Reduce(bwd, 1:Obs, init = matrix(rep(1, nQ), nrow = nQ), acc = TRUE, 
-            right = TRUE)[-1], use.names = FALSE))
+            right = TRUE)[-1], use.names = FALSE)))
 }
 

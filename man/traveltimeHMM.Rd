@@ -2,12 +2,12 @@
 % Please edit documentation in R/traveltimeHMM.R
 \name{traveltimeHMM}
 \alias{traveltimeHMM}
-\title{\code{traveltimeHMM} estimates trips and link specific speed parameters from observed average speeds per unique trip and link.}
+\title{Estimate trip- and link- specific speed parameters from observed average speeds.}
 \usage{
 traveltimeHMM(logspeeds, trips, timeBins, linkIds, nQ = 1L,
   model = c("HMM", "trip-HMM", "trip", "no-dependence"), tol.err = 10,
-  L = 10L, max.it = 20, verbose = FALSE, maxSpeed = NULL,
-  seed = NULL, transition_matrix = NULL, initial_state_values = NULL)
+  L = 10L, max.it = 20, verbose = FALSE, max.speed = NULL,
+  seed = NULL, tmat.p = NULL, init.p = NULL)
 }
 \arguments{
 \item{logspeeds}{A numeric vector of speed observations (in km/h) on the (natural) log-scale.}
@@ -18,23 +18,38 @@ traveltimeHMM(logspeeds, trips, timeBins, linkIds, nQ = 1L,
 
 \item{linkIds}{A vector of link ids (route or way) for each observation of \code{speed}.}
 
-\item{nQ}{Integer number of states, default is \code{1}.}
+\item{nQ}{Integer number of states, \code{default = 1}.}
 
 \item{model}{Type of model as string, \code{trip-HMM} to use a hidden Markov model (HMM) with trip effect, \code{HMM} (default) is an HMM without trip effect,
-\code{trip} is trip effect model without HMM, and \code{no-dependence} is model with link specific parameter only without an HMM nor a trip effect.}
+\code{trip} is trip effect model without HMM, and \code{no-dependence} is model with link specific
+parameter only without an HMM nor a trip effect.}
 
-\item{tol.err}{A numeric variable representing the level of tolerable distance between parameter estimates from consecutive iterations.}
+\item{tol.err}{A numeric variable representing the level of tolerable distance between parameter estimates from consecutive iterations,
+\code{default = 10}.}
 
-\item{L}{An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the parameter for, \code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.}
+\item{L}{An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the parameter for,
+\code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.}
 
-\item{max.it}{An integer for the maximum number of iterations to run for, default = \code{NULL}.}
+\item{max.it}{An integer for the maximum number of iterations to run for, \code{default = 20}.}
 
-\item{maxSpeed}{A float for the maximum speed in km/h, on the linear scale (not the log-scale, unlike for \code{logspeeds}).}
+\item{verbose}{A boolean that triggers verbose output, \code{default = FALSE}.}
 
-\item{...}{extra specific parameters, see details}
+\item{max.speed}{An optional float for the maximum speed in km/h, on the linear scale
+(not the log-scale, unlike for \code{logspeeds}), \code{defaut = NULL} which
+in practice results in a maximum speed of 130 km/h.}
+
+\item{seed}{An optional float for the seed used for the random generation of the first Markov transition matrix
+and initial state vector, \code{default = NULL}.  If not provided, then those objects are generated deterministically.
+The effect of \code{seed} is cancelled by tmat.p or init.p when provided.}
+
+\item{tmat.p}{An optional Markov transition matrix (big 'gamma'), i.e. a \code{nQ x nQ}
+matrix with rows summing to \code{1}, \code{defaut = NULL}}
+
+\item{init.p}{An optional Markov initial state vector (small 'gamma')
+of size \code{nQ} with elements summing to \code{1}, \code{default = NULL}.}
 }
 \value{
-\code{traveltimeHMM} returns a list of the following parameters
+\code{traveltimeHMM} returns a list of the following parameters:
 
 \item{factors}{a factor of interactions (linkId x timeBin) with the same length of observations, and with levels corresponding to unique factors}
 \item{trip}{a factor of trips.}
@@ -47,10 +62,10 @@ traveltimeHMM(logspeeds, trips, timeBins, linkIds, nQ = 1L,
 \item{nQ}{an integer number of states.}
 \item{nB}{an integer number of unique time bins.}
 \item{nObs}{an integer number of observations.}
-\item{model}{the type of model used.}
+\item{model}{a character string corresponding to the type of model used.}
 }
 \description{
-\code{traveltimeHMM} estimates trips and link specific speed parameters from observed average speeds per unique trip and link.
+\code{traveltimeHMM} estimates trip- and link- specific speed parameters from observed average speeds per unique trip and link.
 }
 \examples{
 \dontrun{
@@ -63,4 +78,8 @@ hist(pred)      # histogram of prediction samples
 mean(pred)      # travel time point estimate
 sum(single_trip$traveltime)    # observed traveltime
 }
+
+}
+\references{
+{Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 }

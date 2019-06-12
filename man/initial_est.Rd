@@ -7,7 +7,7 @@
 initial_est(state_prob, by_factor, subset = NULL)
 }
 \arguments{
-\item{state_prob}{An \code{n x Q} martrix of initial state probabilities for \code{n} observations and \code{Q} states}
+\item{state_prob}{An \code{n x Q} matrix of initial state probabilities for \code{n} observations and \code{Q} states}
 
 \item{by_factor}{A vector of factors of size \code{n} (a factor for each row of \code{state_prob}).}
 
@@ -17,7 +17,8 @@ initial_est(state_prob, by_factor, subset = NULL)
 An \code{m x Q} matrix of probabilites for the m levels of \code{by_factor}.
 }
 \description{
-\code{initial_est} return the state probabilities for each level in the passed \code{by_factor}.
+\code{initial_est} return the state probabilities for each level in the passed \code{by_factor},
+defined as the expectation of the vectors for each level.
 }
 \examples{
 x = runif(10)

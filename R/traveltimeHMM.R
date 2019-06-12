@@ -157,10 +157,10 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
     ## i.e cannot compute P(state_{k-1}, state_k | Obs})
     only_init = which(sapply(split(1:nObs, linkTimeFactor), length) == count_init) # get indices of linkTimeFactors for
                                                                                    # unique trips, i.e. those for which
-                                                                                   # the number ofoccurrences equals
+                                                                                   # the number of occurrences equals
                                                                                    # the number of initial occurrences
     index_only_init = sapply(gsub("[0-9.]+", "", names(only_init)),function(r) which(r == levels(timeFactor))) # vector of
-                                                                                   # counts of occurrences for each timeBin
+                                                                                   # timeFactor index for each timeBin
                                                                                    # involved in unique trips only.
     
     # Travel speed variables:
@@ -265,26 +265,34 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
             # The new matrix 'probStates' corresponds to phi_i,k(q) at step 3 of Algo1.
             probStates = normalizeR(alpha * beta + 1e-05, m = nObs, n = nQ)
             
-            ## We calculate the initial state probability.
+            # We calculate the new initial state probability estimates, i.e.
+            # An m x nQ matrix of probabilites for the m levels (linkTimeFactor).
             initNew = initial_est(probStates, linkTimeFactor, init_ids)
-            if (length(index_init_L)) {
-                init_impute = initial_est(probStates, timeFactor, init_ids)
-                initNew[init_L, ] = init_impute[index_init_L, ]
+            if (length(index_init_L)) { # If there are any values to impute, then proceed
+                                        # using only time factors (i.e. without information on links).
+                init_impute = initial_est(probStates, timeFactor, init_ids) # impute for each timeFactor...
+                initNew[init_L, ] = init_impute[index_init_L, ]             # and then replace all rows concerned
+                                                                            # in the initial state probabilities matrix.
             }
 
-            ## calculating conditional joint transition probability P(state_k, state_{k-1} |
-            ## Obs)
+            # We calculate 'probJointStates', the conditional joint transition probability P(state_k, state_{k-1} | Obs)
+            # which corresponds to psi_i,k(q', q) at step 3 of Algo1.
+            # We need first to remove the last row of 'probTran' and the first row of 'beta'.
             probJointStates = normalizeR(alpha[-nObs, rep(1:nQ, each = nQ)] *
                                              (probTran * beta[, rep(1:nQ, nQ)])[-1, ], m = nObs - 1, nQ2)
-            probJointStates[init_ids[-1] - 1, ] <- 0  # setting the overlapping multiplication between trips to 0
+            probJointStates[init_ids[-1] - 1, ] <- 0  # Setting the overlapping multiplication between trips to 0
 
-            ## computing transition matrix estimate and imputing < threshold with second factor
+            # We compute the new transition matrix, i.e.
+            # An m x nQ^2 matrix of probabilites for the m levels (linkTimeFactor).and imputing < threshold with second factor
             tmatNew = tmat_est(probJointStates, probStates, init_ids, linkTimeFactor)
-            if (!is.null(indexLinksLessMinObs)) {
-                tmat_impute = tmat_est(probJointStates, probStates, init_ids, timeFactor)
-                tmatNew[linksLessMinObs, ] <- tmat_impute[indexLinksLessMinObs ]  # applying to all factors with less than min Obs
-                if (length(only_init))
-                    tmatNew[only_init, ] <- tmat_impute[index_only_init, ]
+            if (!is.null(indexLinksLessMinObs)) { # If there are any values to impute, then proceed
+                                                  # using only time factors (i.e. without information on links).
+                tmat_impute = tmat_est(probJointStates, probStates, init_ids, timeFactor) # impute for each time factor...
+                tmatNew[linksLessMinObs, ] <- tmat_impute[indexLinksLessMinObs ]  # and then replace all rows concerned
+                                                                                  # in the transition matrix.
+            
+                if (length(only_init)) # If there are trips with only one occurrence...
+                    tmatNew[only_init, ] <- tmat_impute[index_only_init, ] # ... then impute using time factor.
             }
             
         }
