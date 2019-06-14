@@ -146,19 +146,20 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
     nFactors = sapply(split(1:nObs, linkTimeFactor), length)       # Number of observations per linkTimeFactor
     linksLessMinObs = which(nFactors < L) # vector of indices of all linkTimeFactors for which we need to impute 
                                           # because of insufficient data items (<L)
-    indexLinksLessMinObs = sapply(gsub("[0-9.]+", "", names(linksLessMinObs)), function(r) which(r == 
-        levels(timeFactor))) # Vector of indices to timeFactor for each linkTimeFactor just identified
+    # "^[^.]+.", from start of line ^, remove everything by a dot [^.], up to the .
+    indexLinksLessMinObs = sapply(gsub("^[^.]+.", "", names(linksLessMinObs)),
+                                  function(r) which(r == levels(timeFactor))) # Vector of indices to timeFactor
+                                                                              # for each linkTimeFactor just identified
 
     # Case 2
     init_ids <- seq_along(trips)[!duplicated(trips)]  # Vector of indices of the initial state observation for each trip
     count_init <- sapply(split(1:nlevels(trips), linkTimeFactor[init_ids]),length) # vector of counts of initial
                                                                                    # state observations for each linkTimeFactor
     init_L <- which(count_init < L) # vector of indices of all linkTimeFactors with insufficient occurrence of initial occurrences
-    index_init_L <- sapply(gsub("[0-9.]+", "", names(init_L)),
+    index_init_L <- sapply(gsub("^[^.]+.", "", names(init_L)),
                            function(r) which(r == levels(timeFactor))) # vector of indices to timeFactor
                                                                        # for each linkTimeFactor just identified
-     
-                                                                      # (initial occurrence only)
+                                                                       # (initial occurrence only)
   
 
     # Case 3
@@ -166,11 +167,10 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
                                                                                    # unique trips, i.e. those for which
                                                                                    # the number of occurrences equals
                                                                                    # the number of initial occurrences
-    index_only_init = sapply(gsub("[0-9.]+", "", names(only_init)),
+    index_only_init = sapply(gsub("^[^.]+.", "", names(only_init)),
                              function(r) which(r == levels(timeFactor))) # Vector of indices to timeFactor
                                                                          # for each linkTimeFactor just identified...
 
-    
     # Travel speed variables:
     # mu_speed and var_speed are the mean and variance matrices in eq. (3) in Woodard et al.
     # Each matrix has nQ columns and as many rows as there are linkTimeFactors.
