@@ -13,7 +13,7 @@ order_states <- function(param) {
     aux = which(apply(param, 1L, function(r) any(diff(r) < 0L)))
     sorted = NULL
     if (length(aux)) 
-        sorted = t(apply(param[aux, ], 1L, order))
+        sorted = t(apply(param[aux, , drop=F], 1L, order))
     
     list(toSort = aux, order = sorted)
 }

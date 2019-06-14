@@ -2,6 +2,7 @@
 
 S3method(predict,traveltime)
 export(forwardback)
+export(gaussian_param_by_factor)
 export(rules2timebins)
 export(time_bins_functional)
 export(traveltimeHMM)

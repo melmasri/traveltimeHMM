@@ -2,14 +2,14 @@
 % Please edit documentation in R/hmm_estimates.R
 \name{initial_est}
 \alias{initial_est}
-\title{Commputes initial state probabilites}
+\title{Commpute initial state probabilites}
 \usage{
 initial_est(state_prob, by_factor, subset = NULL)
 }
 \arguments{
 \item{state_prob}{An \code{n x Q} matrix of initial state probabilities for \code{n} observations and \code{Q} states}
 
-\item{by_factor}{A vector of factors of size \code{n} (a factor for each row of \code{state_prob}).}
+\item{by_factor}{A vector of factors (link + time bin) of size \code{n} (a factor for each row of \code{state_prob}).}
 
 \item{subset}{A vector indexing the rows of \code{state_prob} for which states probabilities are computed using only this subset, defualt is \code{NULL}}
 }
@@ -17,11 +17,15 @@ initial_est(state_prob, by_factor, subset = NULL)
 An \code{m x Q} matrix of probabilites for the m levels of \code{by_factor}.
 }
 \description{
-\code{initial_est} return the state probabilities for each level in the passed \code{by_factor},
-defined as the expectation of the vectors for each level.
+\code{initial_est} return the initial state probabilities for each level in the passed \code{by_factor},
+defined as the expectation of the vectors for each level.  These probabilities correspond to Small_Gamma_j,b^(t+1)(q)
+at step 4 of Algorithm 1 in Woodard et a., 2017
 }
 \examples{
 x = runif(10)
 x = cbind(x, 1-x)
 initial_est(x, factor(sample(c("A", "B"), 10, replace=TRUE)))
+}
+\references{
+{Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 }

@@ -122,7 +122,8 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
         trips = factor(trips) 
     if (!is.factor(linkIds)) 
         linkIds = factor(linkIds)
-    
+
+    nB <- length(unique(timeBins))  # time bins
     nQ2 <- nQ^2 # Compute nQ2, the square of nQ, which will be used often
     nObs <- length(logspeeds) # nObs now contains the number of observations
     nlinks <- nlevels(linkIds) # nlinks now contains the number of distinct links
@@ -133,35 +134,42 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
     linkTimeFactor = interaction(linkIds, timeBins, lex.order = TRUE)  # factor of link id and time bin, using lexicographic order.
     obsId = as.numeric(linkTimeFactor) # CAUTION with that approach.  ÉG 2019/05/30
     tripId = as.numeric(trips) # CAUTION with that approach.  ÉG 2019/05/30
-    nFactors = sapply(split(1:nObs, linkTimeFactor), length)       # Number of observations per linkTimeFactor
-    
+
     # Preparation of imputation variables - refers to eq. (6) in Woodard et al.
-    # indexLinksLessMinObs = NULL # Useless line it seems, confirm removal.  ÉG 2019/06/03
-    linksLessMinObs = which(nFactors < L) # vector of indices of all factors for which we need to impute 
-    indexLinksLessMinObs = sapply(gsub("[0-9.]+", "", names(linksLessMinObs)), function(r) which(r == 
-        levels(timeFactor))) # vector of all timeBins with counts of occurrences of the corresponding linkTimeFactor...
-                             # REWRITE COMMENT.  ÉG 2019/06/05
+    # We need to handle the following three cases:
+    # 1. When a linkTimeFactor has fewer than L observations (counting all of them)
+    # 2. When a linkTimeFactor has fewer than L initial state observations only
+    # 2. When a linkTimeFactor has only initial states (so we cannot compute P(state_{k-1}, state_k | Obs}))
+    # In all cases we will later impute based on the timeFactors, not taking care of the link.
     
-    # Taking into account the initial state observation (initial occurrence) for each link for each time bin...
-    init_ids <- seq_along(trips)[!duplicated(trips)]  # vector of indices of the initial state observation for each trip
+    # Case 1
+    nFactors = sapply(split(1:nObs, linkTimeFactor), length)       # Number of observations per linkTimeFactor
+    linksLessMinObs = which(nFactors < L) # vector of indices of all linkTimeFactors for which we need to impute 
+                                          # because of insufficient data items (<L)
+    indexLinksLessMinObs = sapply(gsub("[0-9.]+", "", names(linksLessMinObs)), function(r) which(r == 
+        levels(timeFactor))) # Vector of indices to timeFactor for each linkTimeFactor just identified
+
+    # Case 2
+    init_ids <- seq_along(trips)[!duplicated(trips)]  # Vector of indices of the initial state observation for each trip
     count_init <- sapply(split(1:nlevels(trips), linkTimeFactor[init_ids]),length) # vector of counts of initial
                                                                                    # state observations for each linkTimeFactor
-    
-    # finding the number of factors (link x timeBin) < L initial observations
-    init_L <- which(count_init < L) # vector of indices of all linkTimeFactors with insufficient occurrences
-    index_init_L <- sapply(gsub("[0-9.]+", "", names(init_L)),function(r) which(r == levels(timeFactor))) # vector of counts
-                                                                                   # of occurrences for each timeBin
-                                                                                   # below L occurrences.  REWRITE COMMENT.  ÉG 2019/06/05
-    
-    ## finding the number of factors (link x timeBin) that have only initial states,
-    ## i.e cannot compute P(state_{k-1}, state_k | Obs})
+    init_L <- which(count_init < L) # vector of indices of all linkTimeFactors with insufficient occurrence of initial occurrences
+    index_init_L <- sapply(gsub("[0-9.]+", "", names(init_L)),
+                           function(r) which(r == levels(timeFactor))) # vector of indices to timeFactor
+                                                                       # for each linkTimeFactor just identified
+     
+                                                                      # (initial occurrence only)
+  
+
+    # Case 3
     only_init = which(sapply(split(1:nObs, linkTimeFactor), length) == count_init) # get indices of linkTimeFactors for
                                                                                    # unique trips, i.e. those for which
                                                                                    # the number of occurrences equals
                                                                                    # the number of initial occurrences
-    index_only_init = sapply(gsub("[0-9.]+", "", names(only_init)),function(r) which(r == levels(timeFactor))) # vector of
-                                                                                   # timeFactor index for each timeBin
-                                                                                   # involved in unique trips only.
+    index_only_init = sapply(gsub("[0-9.]+", "", names(only_init)),
+                             function(r) which(r == levels(timeFactor))) # Vector of indices to timeFactor
+                                                                         # for each linkTimeFactor just identified...
+
     
     # Travel speed variables:
     # mu_speed and var_speed are the mean and variance matrices in eq. (3) in Woodard et al.
@@ -218,6 +226,7 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
     # We create the vector E of length nTrips as follows:
     # if model is "trip-HMM" or "trip" then each Ei has a random value of mean 0 and variance tau2;
     # otherwise each Ei has a value of zero.
+    # TO DO: consider changing the name of E to logE (in line with the paper).  ÉG 2019/06/14
     if(grepl('trip', model)) E <- rnorm(nTrips, 0, sqrt(tau2)) else E <- numeric(nTrips)
     
     ###
@@ -297,18 +306,20 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
             
         }
         
-        ## calculating mean and variance of Gaussian
+        # We compute the mean and variance for the links (first two equations of step 4 in Algo1)
         meanSig = gaussian_param_by_factor(logspeeds - E[tripId], linkTimeFactor, probStates)
-        ## getting states with less than L factors
+        # We perform imputation on time bin only (just as before) for states with fewer than L factors.
         if (!is.null(indexLinksLessMinObs)) {
             meanSigAverage = gaussian_param_by_factor(logspeeds - E[tripId], timeFactor, probStates)
             meanSig$mean[linksLessMinObs, ] = meanSigAverage$mean[indexLinksLessMinObs, ]
-            meanSig$sigma[linksLessMinObs, ] = meanSigAverage$sigma[indexLinksLessMinObs, ]
+            meanSig$sigma2[linksLessMinObs, ] = meanSigAverage$sigma2[indexLinksLessMinObs, ]
         }
         
-        ## sorting mean of Gaussian parameter to make the HMM states identifiable
+        # We enforce Woodard et al.'s restriction mu_j,b,q-1 <= mu_j,b,q (p. 34) by
+        # swapping the mu_s (and sigma2_s as well) of each and every observation if required.
+        # TO DO: Discuss the relevance of such an approach for enforcing the restriction.  ÉG 2019/06/14
         mu_speedNew = meanSig$mean
-        var_speedNew = meanSig$sigma
+        var_speedNew = meanSig$sigma2
         ord = order_states(meanSig$mean)
         if (!is.null(ord$order)) {
             mu_speedNew[ord$toSort, ] = t(sapply(1:length(ord$toSort), function(r) mu_speedNew[ord$toSort[r], 
@@ -317,10 +328,9 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
                 ord$order[r, ]], USE.NAMES = FALSE))
         }
         
-
-        ## Calculating E-effect (trip specific effect parameters)
+        # Calculating E-effect (trip specific effect parameters) --> check later by executing a trip model.  ÉG 2019/06/14
         if(grepl('trip', model)){
-            ## Calculating E-trip variance
+            ## Calculating E-trip variance - last equation of step 4 of Algo1
             tau2 <- .colSums(E^2, m = nTrips, n=1)/nTrips
 
             ## Updating E-trip per trip
@@ -332,7 +342,12 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
             E_new <-  dummy1 / (1/tau2 + dummy2)
         }
         
-        ## Calculating || ThetaNew - Theta ||
+        # Calculating || ThetaNew - Theta || (step 2 of Algo1)
+        # In the following, A is Theta = Theta^(t-1) and B is ThetaNew = Theta^(t).
+        # This will serve to compute iter_error for the purpose of exiting (or not) the loop.
+        # In this version we bundle into Thetas objects of all kinds: mu_s, sigma^2_s, small_gammas, big_gammas, E.
+        # Each object has equal weight for the purpose of computing iter_error.  Isn't the result meaningless
+        # from an optimization point of view.  TO DO: investigate.  ÉG 2019/06/14
         A = c(mu_speed[-linksLessMinObs,], var_speed[-linksLessMinObs,])
         B = c(mu_speedNew[-linksLessMinObs,], var_speedNew[-linksLessMinObs,])
         if(grepl('HMM', model)){
@@ -342,7 +357,7 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
         if(grepl('trip',model)) { A = c(A, E); B = c(B,E_new)}
         iter_error = error.fun(A, B)
 
-        ## re-positioning parameters
+        # We re-position all parameters and increment the counter.
         tmat <- tmatNew
         init <- initNew
         mu_speed <- mu_speedNew
@@ -350,6 +365,7 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
         E <- E_new
         iter <- iter + 1
 
+        # Announcing the expected computation length
         if(iter==1 && (!is.null(max.it) || verbose)){
             if(!is.null(max.it)){
                 message('Expected completion of ', max.it, ' iterations in ',
@@ -359,15 +375,20 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
                         format((Sys.time() - tstart), digits = 3))
             }
         }
+        
+        # Announcing the "error", i.e. the distance between Theta and ThetaNew, which is
+        # to decrease from one iteration to another.
         if(verbose)
             message(round(iter_error,2), " error in iteration ", iter, " @ ", format(Sys.time() - tstart, digits = 3))
 
                 
-        ## breaking loop on convergence
+        # Breaking loop on convergence
         if (iter_error <= tol.err) {
             message("Parameters converged at iteration " , iter-1)
             break
         }
+        
+        # Breaking loop on exhaution of iterations
         if (!is.null(max.it) && iter >= max.it) {
             message("Reached maximum number of iterations")
             break
