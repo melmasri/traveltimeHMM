@@ -1,7 +1,12 @@
 
 
 # Normalize a matrix (m X n) by the sum of its elements
-normalizeC <- function(x) x/.colSums(x, m = length(x), n = 1)  # a much faster version compared to sum or .colSums(x, m=1, n=length(x))
+normalizeV <- function(x) {
+  if(class(x)=="numeric")
+    x/.colSums(x, m = length(x), n = 1)  # a much faster version compared to sum or .colSums(x, m=1, n=length(x))
+  else
+    stop("Function normalizeV requires a vector.")
+}
 
 # Normalize a matrix (m X n) by rowSums
 normalizeR <- function(x, m, n) x/.rowSums(x, m, n)  

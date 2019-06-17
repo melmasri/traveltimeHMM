@@ -32,7 +32,7 @@ forwardback <- function(probTran, initQ) {
     # on the function's interface.
   
     fwd <- function(prob, i) {
-      return(normalizeC(.rowSums(probTran[i, ] * prob[indf], m = nQ, 
+      return(normalizeV(.rowSums(probTran[i, ] * prob[indf], m = nQ, 
         n = nQ))) # Normalize by column.  This implementation is quite different from that in the paper,
                   # where some interaction happens between fv[i] and b.  ÉG 2019/06/10.
     }
@@ -53,7 +53,7 @@ forwardback <- function(probTran, initQ) {
     # seem to occur outside of function forwardback.
     
     bwd <- function(i, prob) {
-      return(normalizeC(.colSums(probTran[i, ] * prob[indb], m = nQ, 
+      return(normalizeV(.colSums(probTran[i, ] * prob[indb], m = nQ, 
         n = nQ))) # TO DO: check that it does what is intended.  WHY do we want to normalize on BWD?
     }
     

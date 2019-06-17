@@ -4,10 +4,7 @@
 \alias{cleanGPS_trip}
 \title{\code{cleanGPS} cleans raw GPS data}
 \usage{
-cleanGPS_trip(trip, trip_id = NULL, min.gps.obs = 50,
-  max.idle.time = 4, max.time.between.gps = 120, min.speed = 5,
-  median.speed = 20, minmax.speed = 30, min.distance = 1000,
-  min.endpoint.speed = 10, tag = NULL, verbose = FALSE)
+cleanGPS_trip(trip, trip_id = NULL, verbose = FALSE, ...)
 }
 \description{
 \code{cleanGPS} cleans raw GPS data
