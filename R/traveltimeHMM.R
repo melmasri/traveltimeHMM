@@ -23,9 +23,10 @@
 #'   and initial state vector, \code{default = NULL}.  If not provided, then those objects are generated deterministically.
 #'   The effect of \code{seed} is cancelled by tmat.p or init.p when provided.
 #' @param tmat.p An optional Markov transition matrix (big 'gamma'), i.e. a \code{nQ x nQ}
-#'   matrix with rows summing to \code{1}, \code{defaut = NULL}
+#'   matrix with rows summing to \code{1}, \code{default = NULL}
 #' @param init.p An optional Markov initial state vector (small 'gamma')
 #'   of size \code{nQ} with elements summing to \code{1}, \code{default = NULL}.
+#' @param debug A boolean with value TRUE if we want debug information to be generated, \code{default = FALSE}.
 #' @details NULL
 #' 
 #' @return \code{traveltimeHMM} returns a list of the following parameters:
@@ -62,9 +63,9 @@
 #' @export
 traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
                           model = c("HMM", "trip-HMM","trip","no-dependence"),
-                          tol.err = 10, L = 10L, max.it = 20,verbose = FALSE,
+                          tol.err = 10, L = 10L, max.it = 20, verbose = FALSE,
                           max.speed = NULL, seed = NULL, tmat.p = NULL,
-                          init.p = NULL) {
+                          init.p = NULL, debug = FALSE) {
 
     # SECTION A - Parameter validation and related processing
     
@@ -248,6 +249,11 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
     message('Model ', model, ' with ', nTrips, ' trips over ',
             nlinks, ' roads and ', nB, ' time bins...')
     
+    if(debug) {
+      sink("debug.txt")
+      sortie.t <- sortie.err <- sortie.err.mu <- sortie.err.var <- numeric(max.it)
+    }
+    
     repeat { # beginning of while loop at step 2 of Algo1
         if (grepl("HMM", model)) { # execute this block only if model is "HMM" or "trip-HMM"
           
@@ -356,7 +362,17 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
         }
         if(grepl('trip',model)) { A = c(A, E); B = c(B,E_new)}
         iter_error = error.fun(A, B)
-
+        
+        if(debug) {
+          sortie.t[iter+1] <- iter+1
+          sortie.err[iter+1] <- iter_error
+          sortie.err.mu[iter+1] <- error.fun( mu_speed[-linksLessMinObs,], mu_speedNew[-linksLessMinObs,])
+          sortie.err.var[iter+1] <- error.fun(var_speed[-linksLessMinObs,],var_speedNew[-linksLessMinObs,])
+          print(paste("t =",iter+1,"; iter_error = ", iter_error,
+                      "; dmu = ",  sortie.err.mu[iter+1],
+                      "; dvar = ", sortie.err.var[iter+1]))
+        }
+        
         # We re-position all parameters and increment the counter.
         tmat <- tmatNew
         init <- initNew
@@ -393,6 +409,12 @@ traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
             message("Reached maximum number of iterations")
             break
         }
+    }
+    
+    if(debug) {
+      sortie <- data.frame(sortie.t, sortie.err, sortie.err.mu, sortie.err.var, stringsAsFactors = FALSE)
+      write.csv(sortie, file="debug.csv")
+      sink()
     }
     
     ## returning variables

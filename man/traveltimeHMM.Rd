@@ -7,7 +7,7 @@
 traveltimeHMM(logspeeds, trips, timeBins, linkIds, nQ = 1L,
   model = c("HMM", "trip-HMM", "trip", "no-dependence"), tol.err = 10,
   L = 10L, max.it = 20, verbose = FALSE, max.speed = NULL,
-  seed = NULL, tmat.p = NULL, init.p = NULL)
+  seed = NULL, tmat.p = NULL, init.p = NULL, debug = FALSE)
 }
 \arguments{
 \item{logspeeds}{A numeric vector of speed observations (in km/h) on the (natural) log-scale.}
@@ -43,10 +43,12 @@ and initial state vector, \code{default = NULL}.  If not provided, then those ob
 The effect of \code{seed} is cancelled by tmat.p or init.p when provided.}
 
 \item{tmat.p}{An optional Markov transition matrix (big 'gamma'), i.e. a \code{nQ x nQ}
-matrix with rows summing to \code{1}, \code{defaut = NULL}}
+matrix with rows summing to \code{1}, \code{default = NULL}}
 
 \item{init.p}{An optional Markov initial state vector (small 'gamma')
 of size \code{nQ} with elements summing to \code{1}, \code{default = NULL}.}
+
+\item{debug}{A boolean with value TRUE if we want debug information to be generated, \code{default = FALSE}.}
 }
 \value{
 \code{traveltimeHMM} returns a list of the following parameters:
