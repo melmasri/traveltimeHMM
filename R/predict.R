@@ -10,7 +10,7 @@
 # a normal distribution with mean 0 and standard deviation tau (if trip model), or a
 # vector of zeros (otherwise).
 
-validateE <- function(object, E, n) {
+getValidE <- function(object, E, n) {
   # Part 1 of validation.  We check for the existence of parameter E.
   if(is.null(E)) { # If not found, we assign value in 'object' if valid.
     if('E' %in% names(object) && !is.null(object$E)) {
@@ -39,6 +39,10 @@ validateE <- function(object, E, n) {
 
 
 predict.traveltime<-function(object, data, starttime = Sys.time(),  n = 1000, E = NULL){
+  
+    # We first perform basic checks.  'data' must be a list, data frame or data table
+    # that minimally includes objects 'linkId' and 'length', the latter having
+    # the same length.
     if(!is.list(data))
       stop('data must be a list, data.frame or data.table')
     if(!all(c('linkId', 'length') %in% names(data)))
@@ -46,6 +50,9 @@ predict.traveltime<-function(object, data, starttime = Sys.time(),  n = 1000, E 
     if(length(data$linkId)!=length(data$length))
       stop('length of objects do not match!')
   
+    # Models of the HMM family ('HMM', 'trip-HMM') are handled by function 'predict.traveltime.HMM'
+    # whilst others are handled by function 'predict.traveltime.no_dependence'
+    # (both functions are below).
     if(grepl('HMM', object$model))
       predict.traveltime.HMM(object, data, starttime, n, E)
     else
@@ -56,7 +63,7 @@ predict.traveltime.no_dependence <- function(object, data, starttime, n = 1000, 
     linkIds = data$linkId
     len = data$length
     ## sampling E (trip-effect)
-    E <- validateE(object, E, n)
+    E <- getValidE(object, E, n)
     fact = paste(linkIds[1], time_bins(starttime), sep = ".")
     id = which(levels(object$factors) == fact)
     speed = rnorm(n, object$mean[id, ], object$sd[id, ])
@@ -74,26 +81,55 @@ predict.traveltime.no_dependence <- function(object, data, starttime, n = 1000, 
 
 predict.traveltime.HMM <- function(object, data, starttime, n = 1000, E = NULL) {
     ## sampling E (trip-effect)
-    linkIds = data$linkId
-    len = data$length
-    E <- validateE(object, E, n)
-    nQ = object$nQ
+    linkIds = data$linkId # Contains IDs of all links for a given trip
+    len = data$length # Contains the length (in km) of each link in 'linkIds'
+    E <- getValidE(object, E, n) # Get a valid vector for 'E'; see comments in function for details.
+    nQ = object$nQ # Get number of states from object.
+
+    # Get link+time factor ID for link on top of list and start time supplied
     id = which(levels(object$factors) == paste(linkIds[1], time_bins(starttime), 
                          sep = "."), useNames = FALSE)
+    if(length(id)==0) # Stop if no such factor is found
+      stop("No link and time combination corresponds to those supplied at the beginning.  Stopping.")
+
+    ###
+    # Beginning implementation of Algorithm 2 (which we call Algo2 hereafter) in Woodard et al.
+    #
+    ## Initialize variables - TO DOCUMENT FURTHER - ÉG 2019/06/19
+    
+    # Step 3 of Algo2: generate a vector of states 1:nQ of size n.
+    # The probability of each state is fixed and provided in object$init
+    # for the first link and start time supplied).
     Qk = sample.int(nQ, n, replace = TRUE, prob = object$init[id, ])
+
+    # Step 2 of Algo2: generate a vector of size n of random speeds with mu and sigma supplied by 'object'.
     speed = rnorm(n, object$mean[id, Qk], object$sd[id, Qk])
-    tt = len[1] * exp(-speed - E)
+    
+    tt = len[1] * exp(-speed - E) # n-sized vector of total travel time
+                                  # on first link: length * speed (adjusted for trip effect)
     if (length(linkIds) > 1) 
         for (k in 2:length(linkIds)) {
-            ## this saves about 50ms for 117 routes (.4 ms per route)
+          
+            # Get n-sized vector of link+timebin factors
+            # (This saves about 50ms for 117 routes (.4 ms per route))
             fact = as.factor(paste(linkIds[k], time_bins(starttime + tt), sep = "."))
+
+            # Get vector of link+time factor IDs for link supplied and resulting time
             id = sapply(levels(fact), function(s) which(levels(object$factors) == 
                 s, useNames = FALSE), USE.NAMES = FALSE)
-            ind = as.numeric(fact)
+            if(length(id)==0) # Stop if no such factor is found
+              stop(paste("No link and time combination corresponds to those supplied at k =", k, ".  Stopping."))
+            
+            ind = as.numeric(fact) # Get n-sized vector of factor IDs relative to vector 'id'
             indIds = (1:length(id) - 1) * nQ
+            
             ## creating tmat takes about 10ms for 2 rows or the full matrix to speed up create
             ## tmat2 before the loop or post-estimation for the whole Quebec dataset, for 1294
             ## obs it takes about an extra 11sec if at the top of the loop
+            
+            # Clarification is needed regarding the workings of
+            # the creation of tmat2 below.  When there's more than 1 id,
+            # aren't we mixing data from different factors?  ÉG 2019/06/19
             tmat2 = matrix(c(t(object$tmat[id, ])), ncol = nQ, byrow = TRUE)
             tmat2 = t(apply(tmat2, 1, cumsum))
             tmat2 = tmat2[indIds[ind] + Qk, ]
