@@ -1,5 +1,3 @@
-
-
 to7daybins <-function(rules){
     if(typeof(rules[[1]])=='list' ){
         wdayrules = lapply(0:6,function(d)
@@ -73,17 +71,25 @@ time_bins_functional<-function(time_bin_readable_function = time_bins_readable ,
     ## A functional function that constructs a list with bin names for each hour of
     ## the week using a humanly readable time function
     ## time 0 is Sunday 0 to 59 min AM, before 1AM
-    period <- match.arg(period)
-    Sun0 = as.POSIXlt("2018-08-26 00:00:00.1 EDT")
-    if(grepl('hour', period))
-        tslice  = (0:(24*7-1))*3600
-    if(grepl('min', period))
-        tslice  = (0:(24*60*7-1))*60
+    period <- match.arg(period) # Select period, default is 'hours'
+    Sun0 = as.POSIXlt("2018-08-26 00:00:00.1 EDT") # Define origin as last Sunday in August 2018 right after midnight
+                                                   # Specific date is unimportant but needs to be a Sunday.
+
+    # We define a vector of time points (in seconds) which determines time slices of length '1-hour' or '1-minute'.
+    # Each time point defines the beginning of a slice.
+    if(period=='hours') 
+        tslice  = (0:(24*7-1))*3600 # case 'hours' : 1-hour time slices
+    else 
+        tslice  = (0:(24*60*7-1))*60 # case 'minutes' : 1-minute time slices
+    
+    # Get a vector of time bins for each time point thus defined
     time.bins.per.slice = sapply(tslice, function(r) time_bin_readable_function(Sun0+r))
+    
+    # Return a function that gives the time bin of a given date using appropriate slicing.
     if(period == 'hours'){
         return(
             function(t){
-                ## time 0 is Sunday 0 to 59 min AM, before 1AM
+                # time 0 is Sunday 0 to 59 min AM, before 1AM
                 t = as.POSIXlt(t)
                 time.bins.per.slice[t$hour + 1 + t$wday*24]
             }
@@ -91,7 +97,7 @@ time_bins_functional<-function(time_bin_readable_function = time_bins_readable ,
     }else{
         return(
             function(t){
-                ## time 0 is Sunday 0 to 59 min AM, before 1AM
+                # time 0 is Sunday 0 to 59 min AM, before 1AM
                 t = as.POSIXlt(t)
                 time.bins.per.slice[t$hour + 1 + t$wday*24 + t$min]
             }
@@ -100,22 +106,21 @@ time_bins_functional<-function(time_bin_readable_function = time_bins_readable ,
 }
 
 time_bins_readable <- function(t){
-    ## A humanly readable function that 
-    ## returns bins of time
-    day = weekdays(t)
-    h = as.POSIXlt(t)$hour
-    sapply(1:length(t), function(k){
-        if(day[k] %in%  c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")){
+    # A humanly readable function that returns bins of time
+    day = as.POSIXlt(t)$wday # Get day of week: from Sunday (0) to Saturday (6)
+    h = as.POSIXlt(t)$hour # Get hour
+    sapply(1:length(t), function(k){ # Return time bin corresponding to hour and day of week
+        if(day[k] %in%  1:5){
             ## weekday Mon-Fri
             if(h[k] >= 7 & h[k] < 9) return('MorningRush')
             if(h[k] >= 15 & h[k]< 18) return('EveningRush')
-            if((day[k]=='Friday'& (h[k]>= 20 | h[k]<6)) | (day[k] %in% c("Monday", "Tuesday", "Wednesday", "Thursday") & (h[k]>=19 | h[k]<6)))
+            if((day[k]==5 & (h[k]>= 20 | h[k]<6)) | (day[k] %in% 1:4 & (h[k]>=19 | h[k]<6)))
                 return ('EveningNight')
             return('Weekday')
         }else{
             ## weekend Sunday Saturday
-            if(day[k]=="Saturday" & (h[k] >= 21 | h[k] < 9)) return("EveningNight")
-            if(day[k]=="Sunday" & (h[k] >= 19 | h[k] < 9)) return("EveningNight")
+            if(day[k]==6 & (h[k] >= 21 | h[k] < 9)) return("EveningNight")
+            if(day[k]==0 & (h[k] >= 19 | h[k] < 9)) return("EveningNight")
             return("Weekendday")
         }
     })
