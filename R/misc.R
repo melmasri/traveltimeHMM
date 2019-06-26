@@ -14,6 +14,7 @@ NULL
 #' \dontrun{
 #' normalizeV(matrix(c(1,2,3,4), nrow=2, ncol = 2))
 #' }
+#' @export
 normalizeV <- function(x) {
   if(class(x)=="numeric")
     x/.colSums(x, m = length(x), n = 1)  # a much faster version compared to sum or .colSums(x, m=1, n=length(x))
@@ -34,9 +35,10 @@ normalizeV <- function(x) {
 #' \dontrun{
 #' normalizeV(matrix(c(1,2,3,4), nrow=2, ncol = 2))
 #' }# Normalize a matrix (m X n) by rowSums
+#' @export
 normalizeR <- function(x, m, n) x/.rowSums(x, m, n)  
 
-# To be documenter later (this function might be removed in the future).
+# To be documented later (this function might be removed in the future).
 order_states <- function(param) {
     ## ordering of estimates parameters per state, to force an ordering in the HMM
     ## param : n x Q matrix, where Q is the number of states return : n x Q where for

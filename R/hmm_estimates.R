@@ -1,3 +1,4 @@
+#' @keywords internal
 #' Commpute initial state probabilites 
 #'
 #' \code{initial_est} return the initial state probabilities for each level in the passed \code{by_factor},
@@ -19,7 +20,7 @@
 #' initial_est(x, factor(sample(c("A", "B"), 10, replace=TRUE)))
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
-
+#' @export
 initial_est <- function(state_prob, by_factor, subset=NULL) {
     # Basic verfication of inputs; stop if any is incorrect.
     if(!is.matrix(state_prob))
@@ -48,10 +49,8 @@ initial_est <- function(state_prob, by_factor, subset=NULL) {
     return(matrix(drop(rawinit), ncol = nQ, byrow = TRUE))
 }
 
-
-
-
-#' @describeIn Compute transition matrix probabilities
+#' @keywords internal
+#' Compute transition matrix probabilities
 #'
 #' \code{tmat_est} returns the transition state probabilities for each level in the passed \by{by_factor}.  These probabilities
 #' correspond to Big_Gamma_j,b^(t+1)(q', q) at step 4 of Algorithm 1 in Woodard et a., 2017
@@ -67,6 +66,7 @@ initial_est <- function(state_prob, by_factor, subset=NULL) {
 #' @examples
 #' \dontrun{
 #' }
+#' @export
 tmat_est <- function(joint_prob,state_prob, init_ids, by_factor){
     # Basic verification of inputs; stop if any is incorrect.
     if(!is.matrix(joint_prob))

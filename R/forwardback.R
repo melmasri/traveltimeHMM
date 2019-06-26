@@ -1,3 +1,4 @@
+#' @keywords internal
 #' Computing the posterior marginals of hidden state variables using a sequence of observations
 #' 
 #' \code{forwardback} implements Russell and Norvig's forward-backward algorithm that is used

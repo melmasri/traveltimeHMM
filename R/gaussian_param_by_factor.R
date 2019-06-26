@@ -1,3 +1,4 @@
+#' @keywords internal
 #' Calculate the parameters of Gaussian speeds
 #' 
 #' \code{gaussian_param_by_factor} calculates the mean and variance of Gaussian speeds.  The function refers to the calculation
