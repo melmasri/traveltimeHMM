@@ -1,17 +1,29 @@
 Package: traveltimeHMM
-Title: Estimate and predict travel time from GPS coordinates
+Title: Estimate and predict travel time in a road network
 Version: 0.0.0.9000
 Authors@R: c(
     person(given = "Mohamad",
            family = "Elmasri",
            role = c("aut", "cre"),
            email = "elmasri.m@gmail.com"),
+    person(given = "Aurelie",
+           family = "Labbe",
+           role = "aut",
+           email = "aurelie.labbe@hec.ca"),
+    person(given = "Denis",
+           family = "Larocque",
+           role = "aut",
+           email = "denis.larocque@hec.ca"),
+    person(given = "Laurent",
+           family = "Charlin",
+           role = "aut",
+           email = "laurent.charlin@hec.ca"),
     person(given = "Eric",
            family = "Germain",
            role = "ctb",
            email = "eric.germain@hec.ca")
            )
-Description: Travel time estimation and prediction from GPS coordinates using an hidden Markov model with trip effects.
+Description: Travel time estimation and prediction from sets of speeds, road links and time periods using an hidden Markov model with trip effects.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
