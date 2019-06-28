@@ -48,8 +48,8 @@
 #' \dontrun{
 #' data(tripset)
 #' ?traveltimeHMM  # for help
-#' fit <- traveltimeHMM(tripset$logspeed, tripset$trip, tripset$timeBin, tripset$linkId, nQ = 2, max.it = 2)
-#' single_trip <- subset(tripset, trip==2700)
+#' fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, tripset$linkID, nQ = 2, max.it = 2)
+#' single_trip <- subset(tripset, tripID==2700)
 #' pred <- predict.traveltime(fit, single_trip,single_trip$time[1])
 #' hist(pred)      # histogram of prediction samples
 #' mean(pred)      # travel time point estimate
@@ -61,13 +61,28 @@
 #'
 
 #' @export
-traveltimeHMM <- function(logspeeds, trips, timeBins, linkIds, nQ = 1L,
-                          model = c("HMM", "trip-HMM","trip","no-dependence"),
+traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkIds = NULL, tripframe = NULL,
+                          nQ = 1L, model = c("HMM", "trip-HMM","trip","no-dependence"),
                           tol.err = 10, L = 10L, max.it = 20, verbose = FALSE,
                           max.speed = NULL, seed = NULL, tmat.p = NULL,
                           init.p = NULL, debug = FALSE) {
 
     # SECTION A - Parameter validation and related processing
+  
+    # A.0 Either 'tripframe' or all of 'logspeeds', 'trips', 'timeBins' and 'linkIds' must be provided.
+    # Otherwise we stop.  Once this is checked for, we extract those fields from 'tripframe' if required.
+    frameAvailable <- !is.null(tripframe)
+    singleParamsAvailable <- !is.null(logspeeds) & !is.null(trips) & !is.null(timeBins) & !is.null(linkIds)
+    
+    if(!xor(frameAvailable, singleParamsAvailable))
+      stop("Either 'frame' or all of 'logspeeds', 'trips', 'timeBins' and 'linkIds' must be provided.")
+    
+    if(frameAvailable) {
+      logspeeds <- tripframe$logspeed
+      trips <- tripframe$tripID
+      timeBins <- tripframe$timeBin
+      linkIds <- tripframe$linkID
+    }
     
     # param <- list(...)  # Put this line back into code later only if required.
     # Ideally all parameters should be explicit in the interface.  EG 2019/05/29

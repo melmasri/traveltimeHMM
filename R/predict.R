@@ -41,13 +41,13 @@ getValidE <- function(object, E, n) {
 predict.traveltime<-function(object, data, starttime = Sys.time(),  n = 1000, E = NULL){
   
     # We first perform basic checks.  'data' must be a list, data frame or data table
-    # that minimally includes objects 'linkId' and 'length', the latter having
+    # that minimally includes objects 'linkID' and 'length', the latter having
     # the same length.
     if(!is.list(data))
       stop('data must be a list, data.frame or data.table')
-    if(!all(c('linkId', 'length') %in% names(data)))
-      stop('data must have objects named linkId and length, corresponding order of travelled links and their lengths')
-    if(length(data$linkId)!=length(data$length))
+    if(!all(c('linkID', 'length') %in% names(data)))
+      stop('data must have objects named linkID and length, corresponding order of travelled links and their lengths')
+    if(length(data$linkID)!=length(data$length))
       stop('length of objects do not match!')
   
     # Models of the HMM family ('HMM', 'trip-HMM') are handled by function 'predict.traveltime.HMM'
@@ -60,7 +60,7 @@ predict.traveltime<-function(object, data, starttime = Sys.time(),  n = 1000, E 
 }
 
 predict.traveltime.no_dependence <- function(object, data, starttime, n = 1000, E = NULL) {
-    linkIds = data$linkId
+    linkIds = data$linkID
     len = data$length
     ## sampling E (trip-effect)
     E <- getValidE(object, E, n)
@@ -81,7 +81,7 @@ predict.traveltime.no_dependence <- function(object, data, starttime, n = 1000, 
 
 predict.traveltime.HMM <- function(object, data, starttime, n = 1000, E = NULL) {
     ## sampling E (trip-effect)
-    linkIds = data$linkId # Contains IDs of all links for a given trip
+    linkIds = data$linkID # Contains IDs of all links for a given trip
     len = data$length # Contains the length (in km) of each link in 'linkIds'
     E <- getValidE(object, E, n) # Get a valid vector for 'E'; see comments in function for details.
     nQ = object$nQ # Get number of states from object.

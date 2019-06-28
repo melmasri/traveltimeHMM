@@ -4,10 +4,11 @@
 \alias{traveltimeHMM}
 \title{Estimate trip- and link- specific speed parameters from observed average speeds.}
 \usage{
-traveltimeHMM(logspeeds, trips, timeBins, linkIds, nQ = 1L,
-  model = c("HMM", "trip-HMM", "trip", "no-dependence"), tol.err = 10,
-  L = 10L, max.it = 20, verbose = FALSE, max.speed = NULL,
-  seed = NULL, tmat.p = NULL, init.p = NULL, debug = FALSE)
+traveltimeHMM(logspeeds = NULL, trips = NULL, timeBins = NULL,
+  linkIds = NULL, tripframe = NULL, nQ = 1L, model = c("HMM",
+  "trip-HMM", "trip", "no-dependence"), tol.err = 10, L = 10L,
+  max.it = 20, verbose = FALSE, max.speed = NULL, seed = NULL,
+  tmat.p = NULL, init.p = NULL, debug = FALSE)
 }
 \arguments{
 \item{logspeeds}{A numeric vector of speed observations (in km/h) on the (natural) log-scale.}
@@ -73,8 +74,8 @@ of size \code{nQ} with elements summing to \code{1}, \code{default = NULL}.}
 \dontrun{
 data(tripset)
 ?traveltimeHMM  # for help
-fit <- traveltimeHMM(tripset$logspeed, tripset$trip, tripset$timeBin, tripset$linkId, nQ = 2, max.it = 2)
-single_trip <- subset(tripset, trip==2700)
+fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, tripset$linkID, nQ = 2, max.it = 2)
+single_trip <- subset(tripset, tripID==2700)
 pred <- predict.traveltime(fit, single_trip,single_trip$time[1])
 hist(pred)      # histogram of prediction samples
 mean(pred)      # travel time point estimate
