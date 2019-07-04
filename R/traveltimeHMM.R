@@ -123,6 +123,7 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
     tmat.0 <-rep(rep(1, nQ)/nQ, nQ)
     ## sampling initial values if seed is passed
     if(!is.null(param$seed) && is.numeric(param$seed)){
+        set.seed(param$seed)
         init.0 <- runif(nQ)
         init.0 <- init.0/sum(init.0)
         tmat.0 <- matrix(runif(nQ^2), nQ, nQ)
