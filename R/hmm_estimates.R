@@ -55,8 +55,8 @@ initial_est <- function(state_prob, by_factor, subset=NULL) {
 #' \code{tmat_est} returns the transition state probabilities for each level in the passed \by{by_factor}.  These probabilities
 #' correspond to Big_Gamma_j,b^(t+1)(q', q) at step 4 of Algorithm 1 in Woodard et a., 2017
 #'
-#' @param joint_prob An \code{n x Q^2} matrix of joint state probabilities for \code{n} observations and \code{Q} states
-#' @param state_prob An \code{n x Q} matrix of initial state probabilities for \code{n} observations and \code{Q} states
+#' @param joint_prob An \code{n-1 x Q^2} matrix of joint state probabilities for \code{n} observations and \code{Q} states
+#' @param state_prob An \code{n-1 x Q} matrix of initial state probabilities for \code{n} observations and \code{Q} states
 #' @param init_ids A vector of indices of the initial state observation for each trip
 #' @param by_factor A vector of factors (link + time bin) of size \code{n} (a factor for each row of \code{state_prob}).
 
@@ -83,20 +83,18 @@ tmat_est <- function(joint_prob,state_prob, init_ids, by_factor){
     nQ2 <- nQ^2 # Compute nQ2, the square of nQ, which will be used often
     nObs <- nrow(state_prob) # Number of observations
 
-    # We need to compute the ratio in the equation at step 4 Algorithm 1 so to get Big_Gamma.  In line with
-    # the equation, we should begin by removing the first link. But we're actually removing the first FACTOR (link+timeBin)
-    # This might be a bug; investigate.  ÉG 2019/06/12
+    # We need to remove the first observation of each trip, except the very first one
+    # which is already out.
+    joint_prob = joint_prob[-c(init_ids[-1] - 1), ] # removing first obs per trip
+    by_factor  = by_factor[-init_ids]               # removing first obs per trip
     
     # Numerator (num): compute a matrix of dimensions m x nQ^2 (where m = the number of factors)...
-    num = vapply(split(joint_prob, by_factor[-1]), function(r) .colSums(r,length(r)/nQ2, nQ2), numeric(nQ2), USE.NAMES = FALSE)
+    num = vapply(split(joint_prob, by_factor), function(r) .colSums(r,length(r)/nQ2, nQ2), numeric(nQ2), USE.NAMES = FALSE)
     num = matrix(drop(num), ncol = nQ2, byrow = TRUE) # ...which becomes a cleaner nQ^2 x m matrix.
     
-    # Denominator (den)
-    den <- state_prob # Start with the initial state probability matrix...
-    den[init_ids[-1] - 1, ] <- 0 # Setting the overlapping multiplication between trips to 0
-    
-    # Compute a matrix of dimensions m x nQ (where m = the number of factors)...
-    den = vapply(split(den[-nObs, ], by_factor[-1]), function(r) .colSums(r, length(r)/nQ, nQ), numeric(nQ), USE.NAMES = FALSE)
+    # Denominator (den): compute a matrix of dimensions m x nQ (where m = the number of factors)...
+    den <- state_prob[-c(init_ids[-1] - 1, nObs),] # removing last obs per trip
+    den = vapply(split(den, by_factor), function(r) .colSums(r, length(r)/nQ, nQ), numeric(nQ), USE.NAMES = FALSE)
     den = matrix(drop(den), ncol = nQ, byrow = TRUE) # ...which becomes a cleaner m x nQ matrix.
     
     # We return the ratio of 'num' over a modified 'den' with each column replicated nQ times consecutively.
