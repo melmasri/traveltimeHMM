@@ -16,22 +16,23 @@ knitr::opts_chunk$set(
 )
 ```
 
-Travel time prediction has many uses for individuals and organizations wishing to estimate the time it takes to complete a given route, but also to choose the best route available for a given trip.  Predictions are likely to be more useful if they include some reliability measure for the expected travel time.  The `traveltimeHMM` package leverages data on vehicle speeds on a set of road links at various points in time to predict the probility distribution of travel time on a given sequence of links, or trip.  The availability of full probability distributions allows better risk management during trip planning.  The package implements a version of the TRIP method proposed in Woodard et al. (2017).
+Travel time prediction has many uses for individuals and organizations wishing to estimate the time it takes to complete a given route, but also to choose the best route available for a given trip.  Predictions are likely to be more useful if they include some reliability measure for the expected travel time.  The `traveltimeHMM` package leverages data on vehicle speeds on a set of road links at various points in time to predict the probability distribution of travel time on a given sequence of links, or trip.  The availability of full probability distributions allows better risk management during trip planning.  The package implements a version of the TRIP method proposed in Woodard et al. (2017).
 
 ## Example data set: `tripset`
 
-We will use the example data set `tripset` to explore the functionalities offered by `traveltimeHMM`.  Data such as that found in `tripset` can be generated, for instance, using GPS data collected from mobile phones.  In the present case, the data comes from a research project and has therefore been fully anonymised.
+We will use the example data set `tripset` to explore the functionalities offered by `traveltimeHMM`.  The data from `tripset` comes from a research project and has been fully anonymised.  Data such as that found in `tripset` can be generated, for instance, using GPS data collected from mobile phones.  In the present case, a preprocessing stage was performed so that trip-, link- and time-based data items (which we will describe shortly) could be generated from GPS data points, rendering the latter unnecessary.  We stress that `traveltimeHMM` does not perform this preprocessing stage, and that the software cannot make use of GPS data points directly.
 
 ```{r}
 library(traveltimeHMM)
+data(tripset)
 head(tripset)
 ```
 
-Travel data is organized around the notions of *trips* and *links*.  Links are road segments each with a well-defined beginning and end points and which can be traversed.  A vehicle performs a trip when it travels from a start point to an end point through a sequence of links.  Thus trips can be considered as ordered sequences of links.  The data set includes data for a collection of trips.
+Travel data is organized around the notions of *trips* and *links*.  Links are road segments each with well-defined beginning and end points and which can be traversed.  A vehicle performs a trip when it travels from a start point to an end point through a sequence of links.  Thus trips can be considered as ordered sequences of links.  The data set includes data for a collection of trips.
 
 - Field `tripID` contains each trip's ID, whereas field `linkID` contains the IDs of each link making up a trip.  Both fields need to be numerical.  It is assumed that, in the data set, all trips are grouped together and all links of a given trip appear in the order in which they are traversed.  *No verification is performed to that effect*.
 
-- Field `timeBin` refers to the time when the traversal of a given link occurred.  Time bins should reflect as much as possible time periods of the week encompassing similar traffic classes.  In `tripset` we find five time bins: `Weekday`, `MorningRush`, `EveningRush`, `EveningNight` and `Weekendday`.  Field `time` served as a basis for determining the time bin for each link traversal, as illustrated in table 1.
+- Field `timeBin` (character string) refers to the time "category" when the traversal of a given link occurred.  Time bins should reflect as much as possible time periods of the week encompassing similar traffic classes.  In `tripset` we find five time bins: `Weekday`, `MorningRush`, `EveningRush`, `EveningNight` and `Weekendday`.  Field `time` served as a basis for determining the time bin for each link traversal, as illustrated in table 1.  *### TO DO: include a mention regarding the need to provide the conversion algorithm from time stamps to time bins.  See issue #17.  ÉG 2019/07/08 ###* 
 
 ```{r echo = FALSE, results='asis'}
 y <- c("Mon - Fri outside rush hour", "Mon - Fri, 7AM - 9AM", "Mon - Fri, 3PM - 6PM", "Sat 9AM - 9PM + Sun 9AM - 7PM", "Sat - Sun otherwise")
@@ -44,6 +45,76 @@ knitr::kable(z, caption = "Table 1 - Example from `tripset` : Time bin by period
 - Field `logspeed` contains the natural logarithm of the speed (in km/h) of traversal of each link.
 
 - Fields `traveltime` and `length` refer respectively to the traversal time (in seconds) and length (in meters) of each link.  Those fields are mostly for reference and are not used directly in the package.  Field `time` also falls in this category; however, data in that field is likely to be useful for providing the starting time of a trip to the prediction function.  We'll have more to say about this later.
+
+## Estimating a travel time model: the algorithm
+
+Model estimation is performed using Algorithm 1 from Woodard et al.  The algorithm takes incoming data on speeds (on a logarithmic scale), trips, road links and time periods, and calculates a list of parameters:
+
+* For each combination of road link $j$, time bin $b$ and congestion state $q$, we get:
+
+    * The ```mean``` $\mu_{j,b,q}$ and standard deviation ```sd``` $=\sigma_{j,b,q}$ of the speed probability distribution (on a logarithmic scale);
+
+    * A vector ```init``` $=\gamma_{j,b}(q)$ which shows the probability of the congestion state $q$ for trips starting on link $j$ during $b$.
+
+    * A transition matrix ```tmat``` $=\Gamma_{j,b}(\tilde{q},q)$ for the congestion state $q$ on $j$ and $b$, conditional on $\tilde{q}$, the congestion state in the previous link.
+    
+* For models of the "trip" family, we also get the trip effect ```E``` $=\log E_i$ for each trip $i$, as well as its variance ```tau``` $=\tau^2$, which is constant across trips. 
+
+The algorithm iterates until either the variation in parameter value between two successive iterations is below a predefined threshold value, or a predefined maximum number of iterations are performed.  At each iteration, the algorithm first calculates, for each link within each trip, the conditional probabilities of having each (hidden) state, and then updates the expectation of each parameter given these probabilities.
+
+## Estimating a travel time model: calling ```traveltimeHMM```
+
+Estimating a model is performed using the `traveltimeHMM` function.  The function's interface is as follows. We will explore its parameters in the next few sections.
+
+```{r eval=FALSE}
+traveltimeHMM(logspeeds = NULL,
+              trips = NULL,
+              timeBins = NULL,
+              linkIds = NULL,
+              tripframe = NULL,
+              nQ = 1L,
+              model = c("HMM", "trip-HMM", "trip", "no-dependence"),
+              tol.err = 10,
+              L = 10L,
+              max.it = 20,
+              verbose = FALSE,
+              max.speed = NULL,
+              seed = NULL,
+              tmat.p = NULL,
+              init.p = NULL,
+              debug = FALSE)
+```
+
+Function `traveltimeHMM` can thus be called either using *explicit parameters* or using a *composite object* incorporating the main parameters, as follows.  The first calling approach involves extracting columns ```logspeeds```, ```trips```, ```timeBins``` and ```linkIds``` from the dataset and passing them explicitly:
+```{r eval=FALSE}
+fit <- traveltimeHMM(logspeeds = tripset$logspeed,
+                     trips = tripset$tripID,
+                     timeBins = tripset$timeBin,
+                     linkIds = tripset$linkID,
+                     nQ = 2,
+                     max.it = 20)
+```
+
+The second calling approach involves passing a single data frame object that contains those same four columns:
+```{r eval=FALSE}
+tripobject <- tripset[,c("logspeed", "tripID", "timeBin", "linkID")]
+fit <- traveltimeHMM(tripframe = tripobject,
+                     nQ = 2,
+                     max.it = 20)
+```
+
+We have already examined the vectors that correspond to each of the first four parameters ```logspeeds```, ```trips```, ```timeBins``` and ```linkIds```, as well as the fifth parameter ```tripframe``` which incorporates these vectors.  Let's now turn our attention to the remaining parameters.
+
+- ```max.it``` corresponds to the number of iterations of the algorithm.
+
+- ```nQ``` represents the number of possible unobserved, or hidden, congestion states for each link that constitutes a trip.  In our example, we chose to define two congestions states which we could implicitly call "not-congested" and "congested".  These congestions states are taken in account when calculating the speed parameters for each link and time bin.
+
+```{r}
+#> max.speed is not specified, setting at default value: 130 km/h
+#> Model HMM with 4914 trips over 13235 roads and 5 time bins...
+#> Expected completion of 20 iterations in 251 secs
+#> Reached maximum number of iterations
+```
 
 ## References
 

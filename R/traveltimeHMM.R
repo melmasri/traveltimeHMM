@@ -1,4 +1,4 @@
-#' Estimate trip- and link- specific speed parameters from observed average speeds.
+#' Estimate trip- and link- specific speed parameters from observed average speeds
 #' 
 #' \code{traveltimeHMM} estimates trip- and link- specific speed parameters from observed average speeds per unique trip and link.
 #'
@@ -6,7 +6,9 @@
 #' @param trips An integer or character vector of trip ids for each observation of \code{speed}.
 #' @param timeBins A character vector of time bins for each observation of \code{speed}.
 #' @param linkIds A vector of link ids (route or way) for each observation of \code{speed}.
-#' @param nQ Integer number of states, \code{default = 1}.
+#' @param tripframe A data frame or equivalent object that contains one column for each of test.
+#' @param nQ An integer corresponding to the number of different congestion states that the traversal
+#'   of a given link can take corresponding to \code{|{1...., Q}|}, \code{default = 1}.
 #' @param model Type of model as string, \code{trip-HMM} to use a hidden Markov model (HMM) with trip effect, \code{HMM} (default) is an HMM without trip effect,
 #'   \code{trip} is trip effect model without HMM, and \code{no-dependence} is model with link specific
 #'   parameter only without an HMM nor a trip effect.
@@ -29,8 +31,7 @@
 #' @param debug A boolean with value TRUE if we want debug information to be generated, \code{default = FALSE}.
 #' @details NULL
 #' 
-#' @return \code{traveltimeHMM} returns a list of the following parameters:
-#' 
+#' @return \code{traveltimeHMM} returns a list of the following parameters.
 #' \item{factors}{a factor of interactions (linkId x timeBin) with the same length of observations, and with levels corresponding to unique factors}
 #' \item{trip}{a factor of trips.}
 #' \item{tmat}{a transition matrix with rows corresponding to \code{levels(factors)}, with columns being the row-wise transition matrix of that factor. For example, \code{matrix(tmat[1,], ncol = nQ, nrow = nQ, byrow = TRUE)} is the transition matrix of \code{levels(factors)[1]}.}
@@ -39,7 +40,7 @@
 #' \item{mean}{a matrix of mean estimates with rows corresponding to \code{levels(factors)}, and columns to mean estimates for the \code{nQ} states.}
 #' \item{tau}{a numeric variable for the standard deviation estimate of the trip effect parameter \code{E}.}
 #' \item{E}{a numeric vector of trip effect estimates corresponding to \code{levels(trip)}.}
-#' \item{nQ}{an integer number of states.}
+#' \item{nQ}{an integer number of congestion states.}
 #' \item{nB}{an integer number of unique time bins.}
 #' \item{nObs}{an integer number of observations.}
 #' \item{model}{a character string corresponding to the type of model used.}
@@ -190,7 +191,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
     # Travel speed variables:
     # mu_speed and var_speed are the mean and variance matrices in eq. (3) in Woodard et al.
     # Each matrix has nQ columns and as many rows as there are linkTimeFactors.
-    # All rows are identical within each matrix:
+    # At first, all rows are identical within each matrix:
     # # for mu_speed, column values are 0..nQ-1
     # # for var_speed, column values are 1..nQ
     mu_speed = matrix(1:nQ - 1, ncol = nQ, nrow = nB * nlinks, byrow = TRUE)
@@ -273,7 +274,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
         if (grepl("HMM", model)) { # execute this block only if model is "HMM" or "trip-HMM"
           
             # probTran is an nObs x nQ^2 matrix having each row represent P(Obs_k | state_k ) * P(state_k | state_{k-1}).
-            # Each row of probTran is such that matrix(probTran[1,], ncol=nQ, nrow=nQ, byrow =TRUE) is the probability
+            # Each row of probTran is such that matrix(probTran[i,], ncol=nQ, nrow=nQ, byrow =TRUE) is the probability
             # above in matrix format.  See documentation for 'forwardback'. 
             probTran = tmat[obsId, ] * pmax(dnorm(logspeeds, E[tripId] + mu_speed[obsId,],
                                                   var_speed[obsId, ]), 0.001)[, rep(1:nQ, nQ)]
