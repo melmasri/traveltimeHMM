@@ -2,7 +2,7 @@
 % Please edit documentation in R/traveltimeHMM.R
 \name{traveltimeHMM}
 \alias{traveltimeHMM}
-\title{Estimate trip- and link- specific speed parameters from observed average speeds.}
+\title{Estimate trip- and link- specific speed parameters from observed average speeds}
 \usage{
 traveltimeHMM(logspeeds = NULL, trips = NULL, timeBins = NULL,
   linkIds = NULL, tripframe = NULL, nQ = 1L, model = c("HMM",
@@ -19,7 +19,10 @@ traveltimeHMM(logspeeds = NULL, trips = NULL, timeBins = NULL,
 
 \item{linkIds}{A vector of link ids (route or way) for each observation of \code{speed}.}
 
-\item{nQ}{Integer number of states, \code{default = 1}.}
+\item{tripframe}{A data frame or equivalent object that contains one column for each of test.}
+
+\item{nQ}{An integer corresponding to the number of different congestion states that the traversal
+of a given link can take corresponding to \code{|{1...., Q}|}, \code{default = 1}.}
 
 \item{model}{Type of model as string, \code{trip-HMM} to use a hidden Markov model (HMM) with trip effect, \code{HMM} (default) is an HMM without trip effect,
 \code{trip} is trip effect model without HMM, and \code{no-dependence} is model with link specific
@@ -52,8 +55,7 @@ of size \code{nQ} with elements summing to \code{1}, \code{default = NULL}.}
 \item{debug}{A boolean with value TRUE if we want debug information to be generated, \code{default = FALSE}.}
 }
 \value{
-\code{traveltimeHMM} returns a list of the following parameters:
-
+\code{traveltimeHMM} returns a list of the following parameters.
 \item{factors}{a factor of interactions (linkId x timeBin) with the same length of observations, and with levels corresponding to unique factors}
 \item{trip}{a factor of trips.}
 \item{tmat}{a transition matrix with rows corresponding to \code{levels(factors)}, with columns being the row-wise transition matrix of that factor. For example, \code{matrix(tmat[1,], ncol = nQ, nrow = nQ, byrow = TRUE)} is the transition matrix of \code{levels(factors)[1]}.}
@@ -62,7 +64,7 @@ of size \code{nQ} with elements summing to \code{1}, \code{default = NULL}.}
 \item{mean}{a matrix of mean estimates with rows corresponding to \code{levels(factors)}, and columns to mean estimates for the \code{nQ} states.}
 \item{tau}{a numeric variable for the standard deviation estimate of the trip effect parameter \code{E}.}
 \item{E}{a numeric vector of trip effect estimates corresponding to \code{levels(trip)}.}
-\item{nQ}{an integer number of states.}
+\item{nQ}{an integer number of congestion states.}
 \item{nB}{an integer number of unique time bins.}
 \item{nObs}{an integer number of observations.}
 \item{model}{a character string corresponding to the type of model used.}

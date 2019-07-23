@@ -14,8 +14,10 @@
 #'   parameter only without an HMM nor a trip effect.
 #' @param tol.err A numeric variable representing the level of tolerable distance between parameter estimates from consecutive iterations,
 #'   \code{default = 10}.
-#' @param L An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the parameter for,
-#'   \code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.
+#' @param L An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate
+#' the parameter for, \code{default = 10}. Factors that have fewer total observations or initial state
+#' observations than \code{L} their estimates are imputed using time bin data, without regard to road
+#' link data.
 #' @param max.it An integer for the maximum number of iterations to run for, \code{default = 20}.
 #' @param verbose A boolean that triggers verbose output, \code{default = FALSE}.
 #' @param max.speed An optional float for the maximum speed in km/h, on the linear scale
@@ -156,7 +158,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
     # We need to handle the following three cases:
     # 1. When a linkTimeFactor has fewer than L observations (counting all of them)
     # 2. When a linkTimeFactor has fewer than L initial state observations only
-    # 2. When a linkTimeFactor has only initial states (so we cannot compute P(state_{k-1}, state_k | Obs}))
+    # 3. When a linkTimeFactor has only initial states (so we cannot compute P(state_{k-1}, state_k | Obs}))
     # In all cases we will later impute based on the timeFactors, not taking care of the link.
     
     # Case 1
