@@ -31,8 +31,10 @@ parameter only without an HMM nor a trip effect.}
 \item{tol.err}{A numeric variable representing the level of tolerable distance between parameter estimates from consecutive iterations,
 \code{default = 10}.}
 
-\item{L}{An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate the parameter for,
-\code{default = 10}. Factors that have less observations than \code{L} their estimates are imputed by the average over timeBins.}
+\item{L}{An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate
+the parameter for, \code{default = 10}. Factors that have fewer total observations or initial state
+observations than \code{L} their estimates are imputed using time bin data, without regard to road
+link data.}
 
 \item{max.it}{An integer for the maximum number of iterations to run for, \code{default = 20}.}
 

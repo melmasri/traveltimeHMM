@@ -44,9 +44,13 @@ names(z) <- c("Period of the week", "Time bin")
 knitr::kable(z, caption = "Table 1 - Example from `tripset` : Time bin by period of the week", escape = FALSE)
 ```
 
-- Field `logspeed` contains the natural logarithm of the *speed* (in km/h) of traversal of each link.
+- Field `logspeed` contains the natural logarithm of the *speed* (in km/h) of traversal of each link.  This information is central to the estimation algorithm.
 
-- Fields `traveltime` and `length` refer respectively to the traversal time (in seconds) and length (in meters) of each link.  Those fields are mostly for reference and are not used directly in the package.  Field `time` also falls in this category; however, data in that field is likely to be useful for providing the starting time of a trip to the prediction function.  We'll have more to say about this later.
+- Fields `traveltime` refers to the traversal time (in seconds) of each link.  This field is mostly for reference and is not used directly in the package.
+
+- Fields `length` refers to the length (in meters) of each link.  This information is used by the prediction algorithm.
+
+- Field `time` gives the start time in POSIXct format for the traversal of a given link.  Individual datums are not used directly; however, the start time of the very first traversal is likely to be useful for providing the start time of a whole trip to the prediction function.
 
 ## The statistical model
 
@@ -92,7 +96,9 @@ Model estimation is performed using Algorithm 1 from Woodard et al.  The estimat
 
 Calculations are performed iteratively as is typical of non-linear optimization algorithms.  The estimates for each parameter are updated at each iteration, and the algorithm stops when either the variation in parameter estimates between two successive iterations is below a predefined threshold value, or a predefined maximum number of iterations is reached.
 
-The estimation algorithm can be executed by calling the `traveltimeHMM` function.  The function's interface is as follows. We will explore its parameters in the next few sections.
+#### Calling `traveltimeHMM`
+
+The estimation algorithm can be executed by calling the `traveltimeHMM` function.  The function's interface is as follows.
 
 ```{r eval=FALSE}
 traveltimeHMM(logspeeds = NULL,
@@ -177,10 +183,10 @@ r <- rbind(r,
            c("`seed`", "An optional float for the seed used for the random generation of the first Markov transition matrix and initial state vector.  Default is `NULL`. If not provided, then those objects are generated deterministically. The effect of `seed` is cancelled by tmat.p or init.p when provided."))
 
 r <- rbind(r,
-           c("`tmat.p`", "An optional Markov transition matrix $\\Gamma$ of size $nQ \\times nQ$ with rows summing to $1$.  Default is `NULL`."))
+           c("`tmat.p`", "An optional Markov transition matrix $\\Gamma$ of size `nQ` \\times `nQ` with rows summing to $1$.  Default is `NULL`."))
 
 r <- rbind(r,
-           c("`init.p`", "An optional Markov initial state vector $\\gamma$ of size $nQ$ with elements summing to $1$.  Default is `NULL`."))
+           c("`init.p`", "An optional Markov initial state vector $\\gamma$ of size `nQ` with elements summing to $1$.  Default is `NULL`."))
 
 r <- rbind(r,
            c("`debug`", "A boolean with value `TRUE` if we want debug information to be generated.  Default is `FALSE`."))
@@ -196,14 +202,24 @@ The implementation allows imputing for combinations of road link and time bin fo
 
 Imputation is performed in the following three cases:
 
-- Case 1: when a combination has fewer than L *total observations*;
+- Case 1: when a combination has fewer than $L$ *total observations*;
 
-- Case 2: when a combination has fewer than L *initial state observations only*;
+- Case 2: when a combination has fewer than $L$ *initial state observations only*;
 
 - Case 3: when a combination has only initial states.
 
 The number of observations specified in parameter `L` determines the threshold below which imputation occurs for cases 1 and 2.
 
+#### Output from execution
+
+Below is some typical output from executing `travetimeHMM`.  One can find:
+
+* the maximum speed on the road network;
+* the number of trips, road links and time bins;
+* the number of iterations to be executed;
+* an estimate of the total execution time, based on the time it takes for executing a firts iteration.
+
+Error messages are described in the appendix.
 
 ```{r}
 #> max.speed is not specified, setting at default value: 130 km/h
@@ -212,10 +228,66 @@ The number of observations specified in parameter `L` determines the threshold b
 #> Reached maximum number of iterations
 ```
 
+#### Return values
+
+The execution of `traveltimeHMM` returns a list of the parameters in Table 4. 
+
+```{r echo = FALSE, results='asis'}
+library(knitr)
+library(kableExtra)
+
+r <-       c("`factors`", "A factor of interactions (`linkIds` x `timeBins`) of length `nObs`.  Factors are in the format 'linkId.timeBin'.")
+
+r <- rbind(r,
+           c("`trip`", "A factor of trip IDs."))
+
+r <- rbind(r,
+           c("`tmat`", "A transition matrix with rows corresponding to `levels(factors)`, and with columns being the row-wise transition matrix of that factor. For example, `matrix(tmat[1,], ncol = nQ, nrow = nQ, byrow = TRUE)` is the transition matrix $\\hat{\\Gamma}$ of `levels(factors)[1]`.  NULL if hidden Markov modelling is not handled by the selected model type."))
+
+r <- rbind(r,
+           c("`init`", "An initial state probability matrix with rows corresponding to `levels(factors)`, and columns to the `nQ` states.  For example, `init[1,]` gives $\\hat{\\gamma}^\\top$ for `levels(factors)[1]`.  NULL if hidden Markov modelling is not handled by the selected model type."))
+
+r <- rbind(r,
+           c("`sd`", "A matrix of standard deviations estimates with rows corresponding to `levels(factors)`, and columns to standard deviation estimates $\\hat{\\sigma}$ for the `nQ` states."))
+
+r <- rbind(r,
+           c("`mean`", "A matrix of mean estimates with rows corresponding to `levels(factors)`, and columns to mean estimates $\\hat{\\sigma}$ for the `nQ` states."))
+
+r <- rbind(r,
+           c("`tau`", "A numeric variable for the standard deviation estimate $\\hat{\\tau}$ for the trip effect parameter `E`.  Equals $1$ if trip effect is not handled by the selected model type. # Should be changed to $0$, see earlier comment.  ÉG 2019/07/24."))
+
+r <- rbind(r,
+           c("`E`", "A numeric vector of trip effect estimates $\\hat{E}$ corresponding to `levels(trip)`.  Values are set to $0$ if trip effect is not handled by the selected model type."))
+
+r <- rbind(r,
+           c("`nQ`", "An integer corresponding to the number of different congestion states, equal to parameter `nQ` that was passed in the function call."))
+
+r <- rbind(r,
+           c("`nB`", "An integer corresponding to the number of unique time bins."))
+
+r <- rbind(r,
+           c("`nObs`", "An integer corresponding to the number of observations."))
+
+r <- rbind(r,
+           c("`model`", "Type of model as string.  Same as parameter `model` that was passed in the function call."))
+z <- as.data.frame(r[,2], row.names = r[,1])
+names(z) <- ""
+knitr::kable(z, caption = "Table 4 - Components of the list object returned by `traveltimeHMM`", escape = FALSE)
+```
+
 
 ## Prediction
 
-In the end, predictions can be obtained by simulation on the basis of these parameter estimates.  In our example, we obtain 1 000 independent predictions of the total travel speed on the selected trip using as many simulations.# Where to put?  ÉG 2019/07/22
+Prediction is performed using Algorithm 2 from Woodard et al.  Each prediction is obtained by simulation on the basis of the parameter estimates supplied to the algorithm.  In short, the algorithm starts with the first road link and determines by simulation the initial congestion state considering the time bin and vector $\hat{\gamma}$.  The algorithm then samples the speed on the link given the congestion state and time bin as well as parameter estimates $\hat{\mu}$ and $\hat{\sigma}$.  Time after traversal of the link is then computed deterministically.  The process is repeated iteratively on the remaining links, this time using the information provided by $\hat{\Gamma}$, ultimately giving a point prediction for the travel time (in seconds) for the whole trip.
+
+In our example, we obtained 1 000 independent predictions of the total travel speed on the selected trip, as shown in Figure 1.  The observed travel time for the same trip in the data set is 887.7327 seconds, whilst the mean of the 1 000 predictions for our simulation was 861.2652 seconds.
+
+```{r echo = FALSE, results = 'asis', fig.cap = "Figure 1 - Histogram of prediction samples for a simulation run using the test data set"}
+library(png)
+img <- readPNG('histogram.png')
+grid::grid.raster(img)
+```
+
 
 ## References
 
