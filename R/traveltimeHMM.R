@@ -40,8 +40,8 @@
 #' \item{init}{a initial state probability matrix with rows corresponding to \code{levels(factors)}, and columns to the \code{nQ} states.}
 #' \item{sd}{a matrix of standard deviations estimates with rows corresponding to \code{levels(factors)}, and columns to standard deviation estimates of the \code{nQ} states.}
 #' \item{mean}{a matrix of mean estimates with rows corresponding to \code{levels(factors)}, and columns to mean estimates for the \code{nQ} states.}
-#' \item{tau}{a numeric variable for the standard deviation estimate of the trip effect parameter \code{E}.}
-#' \item{E}{a numeric vector of trip effect estimates corresponding to \code{levels(trip)}.}
+#' \item{tau}{a numeric variable for the standard deviation estimate of the trip effect parameter \code{logE}.}
+#' \item{logE}{a numeric vector of trip effect estimates corresponding to \code{levels(trip)}.}
 #' \item{nQ}{an integer number of congestion states.}
 #' \item{nB}{an integer number of unique time bins.}
 #' \item{nObs}{an integer number of observations.}
@@ -239,14 +239,13 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
     init <- matrix(init.0, nrow = nB * nlinks, ncol = nQ, byrow = TRUE)
     tmat <- matrix(tmat.0, nrow = nB * nlinks, ncol = nQ2, byrow = TRUE)
     
-    # Modelling the trip effect E: see eq. (1) from Woodard et al.
+    # Modelling the trip effect logE: see eq. (1) from Woodard et al.
     tau2 = 1 # set initial value for tau2: see eq. (5) from Woodard et al.
     
-    # We create the vector E of length nTrips as follows:
+    # We create the vector logE of length nTrips as follows:
     # if model is "trip-HMM" or "trip" then each Ei has a random value of mean 0 and variance tau2;
     # otherwise each Ei has a value of zero.
-    # TO DO: consider changing the name of E to logE (in line with the paper).  ÉG 2019/06/14
-    if(grepl('trip', model)) E <- rnorm(nTrips, 0, sqrt(tau2)) else E <- numeric(nTrips)
+    if(grepl('trip', model)) logE <- rnorm(nTrips, 0, sqrt(tau2)) else logE <- numeric(nTrips)
     
     ###
     # Beginning implementation of Algorithm 1 (which we call Algo1 hereafter) in Woodard et al.
@@ -255,7 +254,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
     iter = 0  # t = 0 in step 1 of Algo1
 
     initNew <- tmatNew <- mu_speedNew <- var_speedNew <- probStates <- NULL
-    E_new <- E
+    logE_new <- logE
     tstart = Sys.time()  # starting time
     
     # Definition of error function as the absolute value of the difference between both parameters.
@@ -278,7 +277,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
             # probTran is an nObs x nQ^2 matrix having each row represent P(Obs_k | state_k ) * P(state_k | state_{k-1}).
             # Each row of probTran is such that matrix(probTran[i,], ncol=nQ, nrow=nQ, byrow =TRUE) is the probability
             # above in matrix format.  See documentation for 'forwardback'. 
-            probTran = tmat[obsId, ] * pmax(dnorm(logspeeds, E[tripId] + mu_speed[obsId,],
+            probTran = tmat[obsId, ] * pmax(dnorm(logspeeds, logE[tripId] + mu_speed[obsId,],
                                                   var_speed[obsId, ]), 0.001)[, rep(1:nQ, nQ)]
             
             # fb is a list of alpha and beta (respectively forward and backward probability row-wise vectors,
@@ -331,10 +330,10 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
         }
         
         # We compute the mean and variance for the links (first two equations of step 4 in Algo1)
-        meanSig = gaussian_param_by_factor(logspeeds - E[tripId], linkTimeFactor, probStates)
+        meanSig = gaussian_param_by_factor(logspeeds - logE[tripId], linkTimeFactor, probStates)
         # We perform imputation on time bin only (just as before) for states with fewer than L factors.
         if (!is.null(indexLinksLessMinObs)) {
-            meanSigAverage = gaussian_param_by_factor(logspeeds - E[tripId], timeFactor, probStates)
+            meanSigAverage = gaussian_param_by_factor(logspeeds - logE[tripId], timeFactor, probStates)
             meanSig$mean[linksLessMinObs, ] = meanSigAverage$mean[indexLinksLessMinObs, ]
             meanSig$sigma2[linksLessMinObs, ] = meanSigAverage$sigma2[indexLinksLessMinObs, ]
         }
@@ -355,7 +354,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
         # Calculating E-effect (trip specific effect parameters) --> check later by executing a trip model.  ÉG 2019/06/14
         if(grepl('trip', model)){
             ## Calculating E-trip variance - last equation of step 4 of Algo1
-            tau2 <- .colSums(E^2, m = nTrips, n=1)/nTrips
+            tau2 <- .colSums(logE^2, m = nTrips, n=1)/nTrips
 
             ## Updating E-trip per trip
             dummy <- if(is.null(probStates)) 1/var_speedNew[obsId,] else  probStates/var_speedNew[obsId,]
@@ -363,13 +362,13 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
             h <- .rowSums(dummy * mu_speedNew[obsId,], m = nObs, n = nQ)
             dummy1 <- vapply(split(logspeeds * a - h, trips), function(r) .colSums(r, m = length(r), n=1), numeric(1), USE.NAMES = FALSE)
             dummy2 <- vapply(split(a, trips), function(r) .colSums(r, m = length(r), n=1), numeric(1), USE.NAMES = FALSE)
-            E_new <-  dummy1 / (1/tau2 + dummy2)
+            logE_new <-  dummy1 / (1/tau2 + dummy2)
         }
         
         # Calculating || ThetaNew - Theta || (step 2 of Algo1)
         # In the following, A is Theta = Theta^(t-1) and B is ThetaNew = Theta^(t).
         # This will serve to compute iter_error for the purpose of exiting (or not) the loop.
-        # In this version we bundle into Thetas objects of all kinds: mu_s, sigma^2_s, small_gammas, big_gammas, E.
+        # In this version we bundle into Thetas objects of all kinds: mu_s, sigma^2_s, small_gammas, big_gammas, logE.
         # Each object has equal weight for the purpose of computing iter_error.  Isn't the result meaningless
         # from an optimization point of view.  TO DO: investigate.  ÉG 2019/06/14
         A = c(mu_speed[-linksLessMinObs,], var_speed[-linksLessMinObs,])
@@ -378,7 +377,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
             A = c(A, init[-init_L,], tmat[-unique(linksLessMinObs,only_init),])
             B = c(B, initNew[-init_L,], tmatNew[-unique(linksLessMinObs,only_init),])
         }
-        if(grepl('trip',model)) { A = c(A, E); B = c(B,E_new)}
+        if(grepl('trip',model)) { A = c(A, logE); B = c(B,logE_new)}
         iter_error = error.fun(A, B)
         
         if(debug) {
@@ -396,7 +395,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
         init <- initNew
         mu_speed <- mu_speedNew
         var_speed <- var_speedNew
-        E <- E_new
+        logE <- logE_new
         iter <- iter + 1
 
         # Announcing the expected computation length
@@ -443,7 +442,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
                 sd = sqrt(var_speed),
                 mean = mu_speed,
                 tau  = sqrt(tau2),
-                E = E,
+                logE = logE,
                 nQ = nQ,
                 nB = nB,
                 nObs = nObs,

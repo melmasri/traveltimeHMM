@@ -5,7 +5,7 @@
 \title{Predict the travel time for a trip using a \code{traveltimeHMM} model object}
 \usage{
 \method{predict}{traveltime}(modelObject, tripdata,
-  starttime = Sys.time(), nbRuns = 1000, E = NULL)
+  starttime = Sys.time(), nbRuns = 1000, logE = NULL)
 }
 \arguments{
 \item{modelObject}{A list provided through the execution of function \code{timetravelHMM}.
@@ -21,7 +21,7 @@ in POSIXct format.  Default is the current date and time.}
 
 \item{nbRuns}{Number of simulation runs.  Default is 1000.}
 
-\item{E}{Vector of trip effects.  Incomplete, to be checked.  ÉG 2019/07/24}
+\item{logE}{Vector of trip effects.  Incomplete, to be checked.  ÉG 2019/07/24}
 }
 \value{
 \code{predict.traveltime} returns a vector of size nbRuns of numerics representing the point prediction of total travel time, in seconds, for each run.

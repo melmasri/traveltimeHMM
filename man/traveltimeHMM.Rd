@@ -64,8 +64,8 @@ of size \code{nQ} with elements summing to \code{1}, \code{default = NULL}.}
 \item{init}{a initial state probability matrix with rows corresponding to \code{levels(factors)}, and columns to the \code{nQ} states.}
 \item{sd}{a matrix of standard deviations estimates with rows corresponding to \code{levels(factors)}, and columns to standard deviation estimates of the \code{nQ} states.}
 \item{mean}{a matrix of mean estimates with rows corresponding to \code{levels(factors)}, and columns to mean estimates for the \code{nQ} states.}
-\item{tau}{a numeric variable for the standard deviation estimate of the trip effect parameter \code{E}.}
-\item{E}{a numeric vector of trip effect estimates corresponding to \code{levels(trip)}.}
+\item{tau}{a numeric variable for the standard deviation estimate of the trip effect parameter \code{logE}.}
+\item{logE}{a numeric vector of trip effect estimates corresponding to \code{levels(trip)}.}
 \item{nQ}{an integer number of congestion states.}
 \item{nB}{an integer number of unique time bins.}
 \item{nObs}{an integer number of observations.}

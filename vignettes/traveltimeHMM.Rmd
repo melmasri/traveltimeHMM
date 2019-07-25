@@ -248,16 +248,16 @@ r <- rbind(r,
            c("`init`", "An initial state probability matrix with rows corresponding to `levels(factors)`, and columns to the `nQ` states.  For example, `init[1,]` gives $\\hat{\\gamma}^\\top$ for `levels(factors)[1]`.  NULL if hidden Markov modelling is not handled by the selected model type."))
 
 r <- rbind(r,
-           c("`sd`", "A matrix of standard deviations estimates with rows corresponding to `levels(factors)`, and columns to standard deviation estimates $\\hat{\\sigma}$ for the `nQ` states."))
+           c("`sd`", "A matrix of standard deviations estimates for the  natural logarithm of the speed (in km/h), with rows corresponding to `levels(factors)`, and columns to standard deviation estimates $\\hat{\\sigma}$ for the `nQ` states."))
 
 r <- rbind(r,
-           c("`mean`", "A matrix of mean estimates with rows corresponding to `levels(factors)`, and columns to mean estimates $\\hat{\\sigma}$ for the `nQ` states."))
+           c("`mean`", "A matrix of mean estimates for the  natural logarithm of the speed (in km/h), with rows corresponding to `levels(factors)`, and columns to mean estimates $\\hat{\\sigma}$ for the `nQ` states.  Speed"))
 
 r <- rbind(r,
-           c("`tau`", "A numeric variable for the standard deviation estimate $\\hat{\\tau}$ for the trip effect parameter `E`.  Equals $1$ if trip effect is not handled by the selected model type. # Should be changed to $0$, see earlier comment.  ÉG 2019/07/24."))
+           c("`tau`", "A numeric variable for the standard deviation estimate $\\hat{\\tau}$ for the trip effect $\\log(E)$.  Equals $1$ if trip effect is not handled by the selected model type. # Should be changed to $0$, see earlier comment.  ÉG 2019/07/24."))
 
 r <- rbind(r,
-           c("`E`", "A numeric vector of trip effect estimates $\\hat{E}$ corresponding to `levels(trip)`.  Values are set to $0$ if trip effect is not handled by the selected model type."))
+           c("`logE`", "A numeric vector of trip effect estimates $\\log(\\hat{E})$ corresponding to `levels(trip)`.  Values are set to $0$ if trip effect is not handled by the selected model type.  Units are the same as for `logspeeds`."))
 
 r <- rbind(r,
            c("`nQ`", "An integer corresponding to the number of different congestion states, equal to parameter `nQ` that was passed in the function call."))
@@ -282,7 +282,7 @@ Prediction is performed using Algorithm 2 from Woodard et al.  Each prediction i
 
 In our example, we obtained 1 000 independent predictions of the total travel speed on the selected trip, as shown in Figure 1.  The observed travel time for the same trip in the data set is 887.7327 seconds, whilst the mean of the 1 000 predictions for our simulation was 861.2652 seconds.
 
-```{r echo = FALSE, results = 'asis', fig.cap = "Figure 1 - Histogram of prediction samples for a simulation run using the test data set"}
+```{r echo = FALSE, results = 'asis', fig.cap = "Figure 1 - Histogram of prediction samples for a simulation of 1 000 runs using the test data set"}
 #library(png)
 #img <- readPNG('histogram.png')
 #grid::grid.raster(img)
@@ -299,7 +299,7 @@ predict(modelObject,
         tripdata,
         starttime = Sys.time(),
         nbRuns = 1000,
-        E = NULL # maybe E = 0 ?  ÉG 2019/07/24)
+        logE = NULL # maybe logE = 0 ?  ÉG 2019/07/24)
 ```
 
 Our example involves predicting the travel time for trip ID 2700 from the original data set, using the model parameters we just estimated, as follows.  We need to manually supply the start time by taking the very first link's time stamp.
@@ -332,7 +332,7 @@ r <- rbind(r,
            c("`nbRuns`", "Number of simulation runs. Default is 1000."))
 
 r <- rbind(r,
-           c("`E`", "A numeric representing the estimate of the mean trip effect for the speed."))
+           c("`logE`", "A numeric representing the estimate of the mean trip effect for the speed in km/h, on the log-scale.  Hence, speeds and trip effects are to be added *on the logarithmic scale* as prescribed in Woodard et al."))
 
 z <- as.data.frame(r[,2], row.names = r[,1])
 names(z) <- ""
