@@ -138,7 +138,7 @@ fit <- traveltimeHMM(tripframe = tripobject,
                      max.it = 20)
 ```
 
-Table 3 provides a description for each parameter^[We have already examined the vectors that correspond to each of the first four parameters ```logspeeds```, ```trips```, ```timeBins``` and ```linkIds```, as well as the fifth parameter ```tripframe``` which incorporates these vectors.  We will not repeat the details here.].
+Table 3 provides a description for each parameter.
 
 ```{r echo = FALSE, results='asis'}
 library(knitr)
@@ -283,11 +283,61 @@ Prediction is performed using Algorithm 2 from Woodard et al.  Each prediction i
 In our example, we obtained 1 000 independent predictions of the total travel speed on the selected trip, as shown in Figure 1.  The observed travel time for the same trip in the data set is 887.7327 seconds, whilst the mean of the 1 000 predictions for our simulation was 861.2652 seconds.
 
 ```{r echo = FALSE, results = 'asis', fig.cap = "Figure 1 - Histogram of prediction samples for a simulation run using the test data set"}
-library(png)
-img <- readPNG('histogram.png')
-grid::grid.raster(img)
+#library(png)
+#img <- readPNG('histogram.png')
+#grid::grid.raster(img)
+load("pred.RData")
+hist(pred)
 ```
 
+#### Calling `predict.traveltime`
+
+The prediction algorithm is executed by calling the `predict.traveltime` function, which has the following interface:
+
+```{r eval=FALSE}
+predict(modelObject,
+        tripdata,
+        starttime = Sys.time(),
+        nbRuns = 1000,
+        E = NULL # maybe E = 0 ?  ÉG 2019/07/24)
+```
+
+Our example involves predicting the travel time for trip ID 2700 from the original data set, using the model parameters we just estimated, as follows.  We need to manually supply the start time by taking the very first link's time stamp.
+
+```{r eval=FALSE}
+# Extracting link traversal data for trip ID 2700.  Link traversal order is preserved.
+single_trip <- subset(tripset, tripID==2700)
+
+pred <- predict.traveltime(modelObject = fit,
+                           tripdata = single_trip,
+                           starttime = single_trip$time[1],
+                           nbRuns = 1000)
+```
+
+Table 5 provides a description for each parameter.
+
+```{r echo = FALSE, results='asis'}
+library(knitr)
+library(kableExtra)
+
+r <-       c("`modelObject`", "A list object corresponding to the return value of function `traveltimeHMM`.")
+
+r <- rbind(r,
+           c("`tripdata`", "A data frame of road links with information on each link's traversal. Columns minimally includes objects `linkID` and `length`, and the latter must have the same length. Rows must be in chronological order."))
+
+r <- rbind(r,
+           c("`starttime`", "The start date and time for the very first link of the trip, in `POSIXct` format. Default is the current date and time."))
+
+r <- rbind(r,
+           c("`nbRuns`", "Number of simulation runs. Default is 1000."))
+
+r <- rbind(r,
+           c("`E`", "A numeric representing the estimate of the mean trip effect for the speed."))
+
+z <- as.data.frame(r[,2], row.names = r[,1])
+names(z) <- ""
+knitr::kable(z, caption = "Table 5 - Parameters for `predict.traveltime`", escape = FALSE)
+```
 
 ## References
 
