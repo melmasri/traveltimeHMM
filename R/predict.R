@@ -2,24 +2,25 @@
 # E can be passed either as a separate parameter with default value NULL, 
 # or as part of 'modelObject'.  Valid values of parameter E are considered first and override
 # any value for E in 'modelObject'.  However, any value passed (either by parameter or
-# through 'modelObject) need to be a vector of length 'n'; otherwise it is discarded
+# through 'modelObject) need to be a vector of length 'nbRuns'; otherwise it is discarded
 # If no valid value is found, then we either assign a vector of random values following
 # a normal distribution with mean 0 and standard deviation tau (if trip model), or a
 # vector of zeros (otherwise).
 
-getValidE <- function(modelObject, E, n) {
-  # Part 1 of validation.  We check for the existence of parameter E.
-  if(is.null(E)) { # If not found, we assign value in 'modelObject' if valid.
-    if('E' %in% names(modelObject) && !is.null(modelObject$E)) {
-      if(is.numeric(modelObject$E) && length(modelObject$E)==n) 
-        E <- modelObject$E
-      else
-        message("Values E in modelObject need to be a vector of length n.  Values for E are discarded.")
+getValidE <- function(modelObject, E, nbRuns) {
+  # Part 1 of validation.  We check for the existence of a valid parameter E
+  # of size either 1 or nbRuns
+  if(!is.null(E)) { # If a numeric parameter exists only...
+    
+    # If parameter is a single numeric, convert to vector of size nbRuns
+    if(is.numeric(E) && length(E) == 1)
+      E <- rep(E, nbRuns)
+    
+    # If we don't end up with a vector of size nbRuns, send warning message.
+    if(!is.numeric(E) || length(E) != nbRuns) {
+      message("Values in parameter E need to be a vector of length 'nbRuns'.  Values for E are discarded.")
+      E <- NULL
     }
-  } else if(!is.numeric(E) || length(E)!=n) { # If a parameter exists, use it only if valid,
-                                              # otherwise set to NULL.
-    message("Values in parameter E need to be a vector of length 'nbRuns'.  Values for E are discarded.")
-    E <- NULL
   }
   # At this point, E has the appropriate value among valid parameters passed,
   # and NULL if no such value is found.
@@ -29,9 +30,10 @@ getValidE <- function(modelObject, E, n) {
   if(is.null(E)) {
     if(grepl('trip', modelObject$model)) 
       E = rnorm(nbRuns, mean = 0, sd = modelObject$tau) # ... we define a vector of random values if trip model...
-    else E = 0 # ... otherwise we set to zero.
+    else E = rep(0, nbRuns) # ... otherwise we set to vector of zeros.
   }
   E # We return the result.
+  # How do we handle tau if E is set to 0?  Currently it keeps its value.  ÉG 2019/07/25
 }
 
 #' Predict the travel time for a trip using a \code{traveltimeHMM} model object
