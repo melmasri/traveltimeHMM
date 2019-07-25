@@ -1,39 +1,39 @@
-# Function validateE returns the appropriate value for E.
-# E can be passed either as a separate parameter with default value NULL, 
-# or as part of 'modelObject'.  Valid values of parameter E are considered first and override
-# any value for E in 'modelObject'.  However, any value passed (either by parameter or
+# Function validateE returns the appropriate value for logE.
+# logE can be passed either as a separate parameter with default value NULL, 
+# or as part of 'modelObject'.  Valid values of parameter logE are considered first and override
+# any value for logE in 'modelObject'.  However, any value passed (either by parameter or
 # through 'modelObject) need to be a vector of length 'nbRuns'; otherwise it is discarded
 # If no valid value is found, then we either assign a vector of random values following
 # a normal distribution with mean 0 and standard deviation tau (if trip model), or a
 # vector of zeros (otherwise).
 
-getValidE <- function(modelObject, E, nbRuns) {
-  # Part 1 of validation.  We check for the existence of a valid parameter E
+getValidE <- function(modelObject, logE, nbRuns) {
+  # Part 1 of validation.  We check for the existence of a valid parameter logE
   # of size either 1 or nbRuns
-  if(!is.null(E)) { # If a numeric parameter exists only...
+  if(!is.null(logE)) { # If a numeric parameter exists only...
     
     # If parameter is a single numeric, convert to vector of size nbRuns
-    if(is.numeric(E) && length(E) == 1)
-      E <- rep(E, nbRuns)
+    if(is.numeric(logE) && length(logE) == 1)
+      logE <- rep(logE, nbRuns)
     
     # If we don't end up with a vector of size nbRuns, send warning message.
-    if(!is.numeric(E) || length(E) != nbRuns) {
-      message("Values in parameter E need to be a vector of length 'nbRuns'.  Values for E are discarded.")
-      E <- NULL
+    if(!is.numeric(logE) || length(logE) != nbRuns) {
+      message("Values in parameter logE need to be a vector of length 'nbRuns'.  Values for logE are discarded.")
+      logE <- NULL
     }
   }
-  # At this point, E has the appropriate value among valid parameters passed,
+  # At this point, logE has the appropriate value among valid parameters passed,
   # and NULL if no such value is found.
   
-  # Part 2 of validation: if E is null...
+  # Part 2 of validation: if logE is null...
   
-  if(is.null(E)) {
+  if(is.null(logE)) {
     if(grepl('trip', modelObject$model)) 
-      E = rnorm(nbRuns, mean = 0, sd = modelObject$tau) # ... we define a vector of random values if trip model...
-    else E = rep(0, nbRuns) # ... otherwise we set to vector of zeros.
+      logE = rnorm(nbRuns, mean = 0, sd = modelObject$tau) # ... we define a vector of random values if trip model...
+    else logE = rep(0, nbRuns) # ... otherwise we set to vector of zeros.
   }
-  E # We return the result.
-  # How do we handle tau if E is set to 0?  Currently it keeps its value.  ÉG 2019/07/25
+  logE # We return the result.
+  # How do we handle tau if logE is set to 0?  Currently it keeps its value.  ÉG 2019/07/25
 }
 
 #' Predict the travel time for a trip using a \code{traveltimeHMM} model object
@@ -48,7 +48,7 @@ getValidE <- function(modelObject, E, nbRuns) {
 #' @param starttime The start date and time for the very first link of the trip,
 #' in POSIXct format.  Default is the current date and time.
 #' @param nbRuns Number of simulation runs.  Default is 1000.
-#' @param E Vector of trip effects.  Incomplete, to be checked.  ÉG 2019/07/24  
+#' @param logE Vector of trip effects.  Incomplete, to be checked.  ÉG 2019/07/24  
 #' @details NULL
 #' 
 #' @return \code{predict.traveltime} returns a vector of size nbRuns of numerics representing the point prediction of total travel time, in seconds, for each run.
@@ -68,7 +68,7 @@ getValidE <- function(modelObject, E, nbRuns) {
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-predict.traveltime<-function(modelObject, tripdata, starttime = Sys.time(),  nbRuns = 1000, E = NULL){
+predict.traveltime<-function(modelObject, tripdata, starttime = Sys.time(),  nbRuns = 1000, logE = NULL){
   
     # We first perform basic checks.  'tripdata' must be a list, data frame or data table
     # that minimally includes objects 'linkID' and 'length', the latter having
@@ -84,36 +84,36 @@ predict.traveltime<-function(modelObject, tripdata, starttime = Sys.time(),  nbR
     # whilst others are handled by function 'predict.traveltime.no_dependence'
     # (both functions are below).
     if(grepl('HMM', modelObject$model))
-      predict.traveltime.HMM(modelObject, tripdata, starttime, nbRuns, E)
+      predict.traveltime.HMM(modelObject, tripdata, starttime, nbRuns, logE)
     else
-      predict.traveltime.no_dependence(modelObject, tripdata , starttime, nbRuns, E)
+      predict.traveltime.no_dependence(modelObject, tripdata , starttime, nbRuns, logE)
 }
 
-predict.traveltime.no_dependence <- function(modelObject, tripdata, starttime, nbRuns = 1000, E = NULL) {
+predict.traveltime.no_dependence <- function(modelObject, tripdata, starttime, nbRuns = 1000, logE = NULL) {
     linkIds = tripdata$linkID
     len = tripdata$length
-    ## sampling E (trip-effect)
-    E <- getValidE(modelObject, E, nbRuns)
+    ## sampling logE (trip-effect)
+    logE <- getValidE(modelObject, logE, nbRuns)
     fact = paste(linkIds[1], time_bins(starttime), sep = ".")
     id = which(levels(modelObject$factors) == fact)
     speed = rnorm(nbRuns, modelObject$mean[id, ], modelObject$sd[id, ])
-    tt = len[1] * exp(-speed - E)
+    tt = len[1] * exp(-speed - logE)
     for (k in 2:length(linkIds)) {
         fact = as.factor(paste(linkIds[k], time_bins(starttime + tt), sep = "."))
         id = sapply(levels(fact), function(s) which(levels(modelObject$factors) == s, useNames = FALSE), USE.NAMES = FALSE)
         ind = as.numeric(fact)
         speed = rnorm(nbRuns, modelObject$mean[id[ind], ], modelObject$sd[id[ind], ])
-        tt = tt + len[k] * exp(-speed - E)
+        tt = tt + len[k] * exp(-speed - logE)
     }
     tt
 }
 
 
-predict.traveltime.HMM <- function(modelObject, tripdata, starttime, nbRuns = 1000, E = NULL) {
-    ## sampling E (trip-effect)
+predict.traveltime.HMM <- function(modelObject, tripdata, starttime, nbRuns = 1000, logE = NULL) {
+    ## sampling logE (trip-effect)
     linkIds = tripdata$linkID # Contains IDs of all links for a given trip
     len = tripdata$length # Contains the length (in km) of each link in 'linkIds'
-    E <- getValidE(modelObject, E, nbRuns) # Get a valid vector for 'E'; see comments in function for details.
+    logE <- getValidE(modelObject, logE, nbRuns) # Get a valid vector for 'logE'; see comments in function for details.
     nQ = modelObject$nQ # Get number of states from modelObject.
 
     # Get link+time factor ID for link on top of list and start time supplied
@@ -135,7 +135,7 @@ predict.traveltime.HMM <- function(modelObject, tripdata, starttime, nbRuns = 10
     # Step 2 of Algo2: generate a vector of size nbRuns of random speeds with mu and sigma supplied by 'modelObject'.
     speed = rnorm(nbRuns, modelObject$mean[id, Qk], modelObject$sd[id, Qk])
     
-    tt = len[1] * exp(-speed - E) # nbRuns-sized vector of total travel time
+    tt = len[1] * exp(-speed - logE) # nbRuns-sized vector of total travel time
                                   # on first link: length * speed (adjusted for trip effect)
     if (length(linkIds) > 1) 
         for (k in 2:length(linkIds)) {
@@ -179,7 +179,7 @@ predict.traveltime.HMM <- function(modelObject, tripdata, starttime, nbRuns = 10
             ## QK below samples a new state based on the new tmat2, which correspods now to 1 row per unqiue factor, and it is the row of the transition matrix of the old state.
             ## now that I think about it, I am not sure about this line tmat2 = t(apply(tmat2, 1, cumsum)), need to be checked.            Qk = max.col(runif(nbRuns) < tmat2, "first")
             speed = rnorm(nbRuns, modelObject$mean[cbind(id[ind], Qk)], modelObject$sd[cbind(id[ind], Qk)])
-            tt = tt + len[k] * exp(-speed - E)
+            tt = tt + len[k] * exp(-speed - logE)
         }
     tt
 }
