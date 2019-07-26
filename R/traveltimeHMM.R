@@ -210,6 +210,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
     
     # Here we supersede the values just set for init.0 and tmat.0 if seed is passed
     if(!is.null(seed) && is.numeric(seed)){
+        set.seed(seed)
         init.0 <- runif(nQ) # gives a vector of random values between 0 and 1
         init.0 <- init.0/sum(init.0) # normalizes the vector
         tmat.0 <- matrix(runif(nQ^2), nQ, nQ) # gives a matrix of random values between 0 and 1
