@@ -8,7 +8,7 @@
   starttime = Sys.time(), nbRuns = 1000, logE = NULL)
 }
 \arguments{
-\item{modelObject}{A list provided through the execution of function \code{timetravelHMM}.
+\item{modelObject}{A model object (a list) provided through the execution of function \code{timetravelHMM}.
 The list includes information on model as well as estimates for its parameters.
 See \code{timetravelHMM} man page.}
 
@@ -21,10 +21,13 @@ in POSIXct format.  Default is the current date and time.}
 
 \item{nbRuns}{Number of simulation runs.  Default is 1000.}
 
-\item{logE}{Vector of trip effects.  Incomplete, to be checked.  ÉG 2019/07/24}
+\item{logE}{Point estimate of trip effects.  \code{logE} normally needs to be a vector of numerics of size \code{nbRuns}.
+If a single numeric value is supplied, it will be replicated into a vector.  If \code{logE} is \code{NULL}
+the function will use either a vector of simulated values (if the model is from the \code{trip} family),
+or a vector of \code{0} otherwise.  Default is \code{NULL}.}
 }
 \value{
-\code{predict.traveltime} returns a vector of size nbRuns of numerics representing the point prediction of total travel time, in seconds, for each run.
+\code{predict.traveltime} returns a vector of size \code{nbRuns} of numerics representing the point prediction of total travel time, in seconds, for each run.
 }
 \description{
 \code{predict.traveltime} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object.
@@ -32,13 +35,22 @@ in POSIXct format.  Default is the current date and time.}
 \examples{
 \dontrun{
 data(tripset)
-?traveltimeHMM  # for help
+
+# Fit a model - use ?traveltimeHMM for details
 fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, tripset$linkID, nQ = 2, max.it = 2)
+
+# Perform a prediction for trip #2700 using the fitted model.
 single_trip <- subset(tripset, tripID==2700)
+
+# We need to supply the time stamp of the very first link traversal (third parameter)
 pred <- predict.traveltime(fit, single_trip,single_trip$time[1])
-hist(pred)      # histogram of prediction samples
-mean(pred)      # travel time point estimate
-sum(single_trip$traveltime)    # observed traveltime
+
+hist(pred)                     # histogram of prediction samples
+mean(pred)                     # travel time point estimate
+sum(single_trip$traveltime)    # observed travel time
+
+?traveltimeHMM      # for help on traveltimeHMM, the estimation function
+?predict.traveltime # for help on predict.traveltime, the prediction function
 }
 
 }

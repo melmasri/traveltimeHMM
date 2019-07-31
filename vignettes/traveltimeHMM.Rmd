@@ -334,10 +334,10 @@ r <- rbind(r,
            c("`starttime`", "The start date and time for the very first link of the trip, in `POSIXct` format. Default is the current date and time."))
 
 r <- rbind(r,
-           c("`nbRuns`", "Number of simulation runs. Default is 1000."))
+           c("`nbRuns`", "Number of simulation runs. Default is $1000$."))
 
 r <- rbind(r,
-           c("`logE`", "A numeric representing the estimate of the mean trip effect for the speed in km/h, on the log-scale.  Hence, speeds and trip effects are to be added *on the logarithmic scale* as prescribed in Woodard et al."))
+           c("`logE`", "A numeric representing the point estimate of the mean trip effect for the speed in km/h, on the log-scale.  (Hence, speeds and trip effects are to be added *on the logarithmic scale* as prescribed in Woodard et al.)  `logE` normally needs to be a vector of numerics of size `nbRuns`. If a single numeric value is supplied, it will be replicated into a vector. If `logE` is `NULL` the function will use either a vector of simulated values (if the model is from the trip family), or a vector of $0$ otherwise. Default is NULL. NOTE: when simulating values for the vector, the value for $\\tau$ is taken from the model object."))
 
 z <- as.data.frame(r[,2], row.names = r[,1])
 names(z) <- ""

@@ -15,9 +15,9 @@
 #' @param tol.err A numeric variable representing the level of tolerable distance between parameter estimates from consecutive iterations,
 #'   \code{default = 10}.
 #' @param L An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate
-#' the parameter for, \code{default = 10}. Factors that have fewer total observations or initial state
-#' observations than \code{L} their estimates are imputed using time bin data, without regard to road
-#' link data.
+#'   the parameter for, \code{default = 10}. Factors that have fewer total observations or initial state
+#'   observations than \code{L} their estimates are imputed using time bin data, without regard to road
+#'   link data.
 #' @param max.it An integer for the maximum number of iterations to run for, \code{default = 20}.
 #' @param verbose A boolean that triggers verbose output, \code{default = FALSE}.
 #' @param max.speed An optional float for the maximum speed in km/h, on the linear scale
@@ -50,13 +50,19 @@
 #' @examples
 #' \dontrun{
 #' data(tripset)
-#' ?traveltimeHMM  # for help
-#' fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, tripset$linkID, nQ = 2, max.it = 2)
+#' 
+#' # Fit an HMM model with 2 hidden congestion states and 20 algorithm iterations
+#' fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, tripset$linkID, nQ = 2, max.it = 20)
+#'
+#' # Perform prediction - use ?predict.traveltime for details
 #' single_trip <- subset(tripset, tripID==2700)
 #' pred <- predict.traveltime(fit, single_trip,single_trip$time[1])
-#' hist(pred)      # histogram of prediction samples
-#' mean(pred)      # travel time point estimate
-#' sum(single_trip$traveltime)    # observed traveltime
+#' hist(pred)
+#' mean(pred)
+#' sum(single_trip$traveltime)
+#' 
+#' ?traveltimeHMM      # for help on traveltimeHMM, the estimation function
+#' ?predict.traveltime # for help on predict.traveltime, the prediction function
 #' }
 #' 
 #' @references
@@ -344,13 +350,13 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
         # TO DO: Discuss the relevance of such an approach for enforcing the restriction.  ÉG 2019/06/14
         mu_speedNew = meanSig$mean
         var_speedNew = meanSig$sigma2
-        ord = order_states(meanSig$mean)
-        if (!is.null(ord$order)) {
-            mu_speedNew[ord$toSort, ] = t(sapply(1:length(ord$toSort), function(r) mu_speedNew[ord$toSort[r], 
-                ord$order[r, ]], USE.NAMES = FALSE))
-            var_speedNew[ord$toSort, ] = t(sapply(1:length(ord$toSort), function(r) var_speedNew[ord$toSort[r], 
-                ord$order[r, ]], USE.NAMES = FALSE))
-        }
+        # ord = order_states(meanSig$mean)
+        # if (!is.null(ord$order)) {
+        #     mu_speedNew[ord$toSort, ] = t(sapply(1:length(ord$toSort), function(r) mu_speedNew[ord$toSort[r], 
+        #         ord$order[r, ]], USE.NAMES = FALSE))
+        #     var_speedNew[ord$toSort, ] = t(sapply(1:length(ord$toSort), function(r) var_speedNew[ord$toSort[r], 
+        #         ord$order[r, ]], USE.NAMES = FALSE))
+        # }
         
         # Calculating E-effect (trip specific effect parameters) --> check later by executing a trip model.  ÉG 2019/06/14
         if(grepl('trip', model)){

@@ -77,13 +77,19 @@ of size \code{nQ} with elements summing to \code{1}, \code{default = NULL}.}
 \examples{
 \dontrun{
 data(tripset)
-?traveltimeHMM  # for help
-fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, tripset$linkID, nQ = 2, max.it = 2)
+
+# Fit an HMM model with 2 hidden congestion states and 20 algorithm iterations
+fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, tripset$linkID, nQ = 2, max.it = 20)
+
+# Perform prediction - use ?predict.traveltime for details
 single_trip <- subset(tripset, tripID==2700)
 pred <- predict.traveltime(fit, single_trip,single_trip$time[1])
-hist(pred)      # histogram of prediction samples
-mean(pred)      # travel time point estimate
-sum(single_trip$traveltime)    # observed traveltime
+hist(pred)
+mean(pred)
+sum(single_trip$traveltime)
+
+?traveltimeHMM      # for help on traveltimeHMM, the estimation function
+?predict.traveltime # for help on predict.traveltime, the prediction function
 }
 
 }

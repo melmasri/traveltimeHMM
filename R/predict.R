@@ -1,12 +1,21 @@
-# Function validateE returns the appropriate value for logE.
-# logE can be passed either as a separate parameter with default value NULL, 
-# or as part of 'modelObject'.  Valid values of parameter logE are considered first and override
-# any value for logE in 'modelObject'.  However, any value passed (either by parameter or
-# through 'modelObject) need to be a vector of length 'nbRuns'; otherwise it is discarded
-# If no valid value is found, then we either assign a vector of random values following
-# a normal distribution with mean 0 and standard deviation tau (if trip model), or a
-# vector of zeros (otherwise).
-
+#' @keywords internal
+#' Get an appropriate value for \code{logE}
+#' 
+#' Function \code{getValidE} takes a tentative value for \code{logE} and returns a valid value for it.
+#' 
+#' The value for \code{logE} in the model object passed as parameter is *NOT* used.
+#' 
+#' @param modelObject A model object (a list) provided through the execution of function \code{timetravelHMM}.
+#' @param logE Tentative values of point estimates of trip effects.
+#' @param nbRuns Number of simulation runs.
+#' 
+#' @return The function return a valid value for \code{logE}.  The value supplied as a parameter
+#'   for \code{logE} is normally a vector of numerics of size \code{nbRuns}, in which case it is
+#'   returned *as is*.  If a single numeric value is supplied instead, it will be replicated into
+#'   a vector of the appropriate size which will be returned.  If \code{logE} is \code{NULL}
+#'   or invalid, then the function will return either a vector of simulated values
+#'   (if the model is from the \code{trip} family), or a vector of \code{0} otherwise.
+#' @export
 getValidE <- function(modelObject, logE, nbRuns) {
   # Part 1 of validation.  We check for the existence of a valid parameter logE
   # of size either 1 or nbRuns
@@ -39,30 +48,48 @@ getValidE <- function(modelObject, logE, nbRuns) {
 #' Predict the travel time for a trip using a \code{traveltimeHMM} model object
 #' 
 #' \code{predict.traveltime} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object.
-#' @param modelObject A list provided through the execution of function \code{timetravelHMM}.
-#' The list includes information on model as well as estimates for its parameters.
-#' See \code{timetravelHMM} man page.
+#' 
+#' The function begins by validating and, if required, replacing the value of the parameter \code{logE}
+#' (see explanation alongside \code{logE} in the *Arguments* section below).  It then transfers execution
+#' to the appropriate function according to the selected model: \code{predict.traveltime.HMM} for
+#' models of the \code{HMM} family, or \code{predict.traveltime.no_dependence} otherwise.
+#'  
+#' @param modelObject A model object (a list) provided through the execution of function \code{timetravelHMM}.
+#'   The list includes information on model as well as estimates for its parameters.
+#'   See \code{timetravelHMM} man page.
 #' @param tripdata A data frame of road links with information on each
-#' link's traversal.  Columns minimally includes objects 'linkID' and 'length',
-#' and the latter must have the same length.  Rows must be in chronological order.
+#'   link's traversal.  Columns minimally includes objects 'linkID' and 'length',
+#'   and the latter must have the same length.  Rows must be in chronological order.
 #' @param starttime The start date and time for the very first link of the trip,
-#' in POSIXct format.  Default is the current date and time.
+#'   in POSIXct format.  Default is the current date and time.
 #' @param nbRuns Number of simulation runs.  Default is 1000.
-#' @param logE Vector of trip effects.  Incomplete, to be checked.  ÉG 2019/07/24  
+#' @param logE Point estimate of trip effects.  \code{logE} normally needs to be a vector of numerics of size \code{nbRuns}.
+#'   If a single numeric value is supplied, it will be replicated into a vector.  If \code{logE} is \code{NULL}
+#'   the function will use either a vector of simulated values (if the model is from the \code{trip} family),
+#'   or a vector of \code{0} otherwise.  Default is \code{NULL}.
 #' @details NULL
 #' 
-#' @return \code{predict.traveltime} returns a vector of size nbRuns of numerics representing the point prediction of total travel time, in seconds, for each run.
+#' @return \code{predict.traveltime} returns a vector of size \code{nbRuns} of numerics representing the point prediction of total travel time, in seconds, for each run.
 #' 
 #' @examples
 #' \dontrun{
 #' data(tripset)
-#' ?traveltimeHMM  # for help
+#' 
+#' # Fit a model - use ?traveltimeHMM for details
 #' fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, tripset$linkID, nQ = 2, max.it = 2)
+#' 
+#' # Perform a prediction for trip #2700 using the fitted model.
 #' single_trip <- subset(tripset, tripID==2700)
+#' 
+#' # We need to supply the time stamp of the very first link traversal (third parameter)
 #' pred <- predict.traveltime(fit, single_trip,single_trip$time[1])
-#' hist(pred)      # histogram of prediction samples
-#' mean(pred)      # travel time point estimate
-#' sum(single_trip$traveltime)    # observed traveltime
+#'
+#' hist(pred)                     # histogram of prediction samples
+#' mean(pred)                     # travel time point estimate
+#' sum(single_trip$traveltime)    # observed travel time
+#' 
+#' ?traveltimeHMM      # for help on traveltimeHMM, the estimation function
+#' ?predict.traveltime # for help on predict.traveltime, the prediction function
 #' }
 #' 
 #' @references
