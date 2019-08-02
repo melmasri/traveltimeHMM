@@ -32,6 +32,12 @@ or a vector of \code{0} otherwise.  Default is \code{NULL}.}
 \description{
 \code{predict.traveltime} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object.
 }
+\details{
+The function begins by validating and, if required, replacing the value of the parameter \code{logE}
+(see explanation alongside \code{logE} in the *Arguments* section below).  It then transfers execution
+to the appropriate function according to the selected model: \code{predict.traveltime.HMM} for
+models of the \code{HMM} family, or \code{predict.traveltime.no_dependence} otherwise.
+}
 \examples{
 \dontrun{
 data(tripset)
