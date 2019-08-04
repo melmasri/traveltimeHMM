@@ -1,24 +1,30 @@
 
 #' @export
-predict.traveltime<-function(object, data, starttime = Sys.time(),  n=1000, ...){
+predict.traveltime<-function(object, data, starttime = Sys.time(),  n=1000, time_bins.fun = time_bins,...){
     if(!is.list(data))
         stop('data must be a list, data.fram or data.table')
     if(!all(c('linkId', 'length') %in% names(data)))
         stop('data must have objects named linkId and length, corresponding order of travelled links and their lengths')
     if(length(data$linkId)!=length(data$length))
         stop('length of objects do not match!')
-    
+    ## checking that time_bins is correctly specified
+    if(is.null(environment(time_bins.fun)$time.bins.per.slice))
+        stop('time_bins function is not properly specified, see ?rules2timebins!')
+    ## checking that the data time bins match the functional
+    if(!all(unique(data$timeBin) %in% unique(environment(time_bins.fun)$time.bins.per.slice)))
+        stop('data time bins do not match functional, see ?rules2timebins!')
+       
     if(object$model == 'no-dependence')
-        return(predict.traveltime.no_dependence(object, data , starttime, n, ...))
+        return(predict.traveltime.no_dependence(object, data , starttime, n, time_bins.fun, ...))
     
     if(object$model =='trip')
-        return(predict.traveltime.no_dependence(object, data , starttime, n, ...))
+        return(predict.traveltime.no_dependence(object, data , starttime, n, time_bins.fun, ...))
     
     if(grepl('HMM', object$model))
-        return(predict.traveltime.HMM(object, data, starttime, n, ...))
+        return(predict.traveltime.HMM(object, data, starttime, n, time_bins.fun, ...))
 }
 
-predict.traveltime.no_dependence <- function(object, data, starttime, n = 1000, ...) {
+predict.traveltime.no_dependence <- function(object, data, starttime, n = 1000, time_bins. = time_bins, ...) {
     param = list(...)
     linkIds = data$linkId
     len = data$length
@@ -28,12 +34,12 @@ predict.traveltime.no_dependence <- function(object, data, starttime, n = 1000, 
     }else if(grepl('trip', object$model))
         E = rnorm(n, mean = 0, sd = object$tau) else E = 0
 
-    fact = paste(linkIds[1], time_bins(starttime), sep = ".")
+    fact = paste(linkIds[1], time_bins.(starttime), sep = ".")
     id = which(levels(object$factors) == fact)
     speed = rnorm(n, object$mean[id, ], object$sd[id, ])
     tt = len[1] * exp(-speed - E)
     for (k in 2:length(linkIds)) {
-        fact = as.factor(paste(linkIds[k], time_bins(starttime + tt), sep = "."))
+        fact = as.factor(paste(linkIds[k], time_bins.(starttime + tt), sep = "."))
         id = sapply(levels(fact), function(s) which(levels(object$factors) == s, useNames = FALSE), USE.NAMES = FALSE)
         ind = as.numeric(fact)
         speed = rnorm(n, object$mean[id[ind], ], object$sd[id[ind], ])
@@ -43,7 +49,7 @@ predict.traveltime.no_dependence <- function(object, data, starttime, n = 1000, 
 }
 
 
-predict.traveltime.HMM <- function(object, data, starttime, n = 1000, ...) {
+predict.traveltime.HMM <- function(object, data, starttime, n = 1000, time_bins. = time_bins, ...) {
     ## sampling E (trip-effect)
     param = list(...)
     linkIds = data$linkId
@@ -53,7 +59,7 @@ predict.traveltime.HMM <- function(object, data, starttime, n = 1000, ...) {
     }else if(grepl('trip', object$model))
         E = rnorm(n, mean = 0, sd = object$tau) else E = 0
     nQ = object$nQ
-    id = which(levels(object$factors) == paste(linkIds[1], time_bins(starttime), 
+    id = which(levels(object$factors) == paste(linkIds[1], time_bins.(starttime), 
                          sep = "."), useNames = FALSE)
     Qk = sample.int(nQ, n, replace = TRUE, prob = object$init[id, ])
     speed = rnorm(n, object$mean[id, Qk], object$sd[id, Qk])
@@ -61,7 +67,7 @@ predict.traveltime.HMM <- function(object, data, starttime, n = 1000, ...) {
     if (length(linkIds) > 1) 
         for (k in 2:length(linkIds)) {
             ## this saves about 50ms for 117 routes (.4 ms per route)
-            fact = as.factor(paste(linkIds[k], time_bins(starttime + tt), sep = "."))
+            fact = as.factor(paste(linkIds[k], time_bins.(starttime + tt), sep = "."))
             id = sapply(levels(fact), function(s) which(levels(object$factors) == 
                 s, useNames = FALSE), USE.NAMES = FALSE)
             ind = as.numeric(fact)

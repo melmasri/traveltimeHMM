@@ -10,10 +10,13 @@ rules = list(
     list(start='15:00', end= '18:00', days = 2:5, tag='ER')
 )
 
+time_bins <- rules2timebins(rules)
+
+
 data(trips)
-fit <- traveltimeHMM(trips$logspeed, trips$trip, trips$timeBin, trips$linkId, nQ = 2, max.it = 10)
+fit <- traveltimeHMM(trips$logspeed, trips$trip, trips$timeBin, trips$linkId, nQ = 2, max.it = 5)
 single_trip <- subset(trips, trip==2700)
-pred <- predict(fit, single_trip)
+pred <- predict.traveltime(fit, single_trip, time_bins.fun = time_bins)
 hist(pred, main ='travel time distribution for trip 2700', freq =FALSE)      # histogram of prediction samples
 abline(v = mean(pred), lty=2, lwd=2)
 mean(pred)      # travel time point estimate

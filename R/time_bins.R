@@ -50,7 +50,7 @@ rules2timebins<-function(rules){
                 ## returns bins of time
                 day = as.POSIXlt(t)$wday
                 tt = time2min(t)
-                getTags <-function(x){
+                getTags <-function(x,k){
                     if(!is.null(x))
                         if(tt[k] >= x['start'] & tt[k] < x['end']) x['tag']
                 }
@@ -60,7 +60,7 @@ rules2timebins<-function(rules){
                     ## If the whole list is null
                     if(is.null(unlist(r))) return ('Other')
                     ## otherwise search along lists
-                    tag = unlist(lapply(r, getTags), use.names=FALSE)
+                    tag = unlist(lapply(r, function(x) getTags(x,k)), use.names=FALSE)
                     if(!is.null(tag)) tag[1] else  return("Other")
                 })
             }
