@@ -3,11 +3,11 @@
 to7daybins <-function(rules){
     if(typeof(rules[[1]])=='list' ){
         wdayrules = lapply(0:6,function(d)
-            t(sapply(rules, function(r)
-                if(d %in% r$days) 
-                    data.frame(start = r$start, end=r$end,
-                               tag = r$tag,
-                               stringsAsFactors = FALSE))))
+           lapply(rules, function(r)
+               if(d %in% r$days)
+                   list(start = r$start, end=r$end,
+                        tag = r$tag, stringsAsFactors = FALSE)
+                  ))
     }else{
         wdayrules = lapply(0:6,function(d)
             if(d %in% rules$days) data.frame(start = rules$start, end = rules$end,
@@ -44,28 +44,29 @@ rules2timebins<-function(rules){
         })
     }
     ruletable =to7daybins(converted)
-    return(
-        time_bins_functional (
+    time_bins = time_bins_functional (
             function(t){
                 ## A humanly readable function for defining rush hour only time bins
                 ## returns bins of time
                 day = as.POSIXlt(t)$wday
                 tt = time2min(t)
+                getTags <-function(x){
+                    if(!is.null(x))
+                        if(tt[k] >= x['start'] & tt[k] < x['end']) x['tag']
+                }
                 sapply(1:length(t), function(k){
                     r = ruletable[[day[k] + 1]]
                     ## weekday Mon-Fri
-                    if(!is.null(unlist(r)))
-                        if(length(r)==1){
-                            if(tt[k] >= r['start'] &  tt[k] < r['end']) return(unlist(r['tag'][[1]]))
-                        }else{
-                            a =which(tt[k] >= r[,'start'] &  tt[k] < r[,'end'])
-                            if(length(a)) return(unlist(r[a,'tag'][[1]]))
-                        }
-                    return("Other")
+                    ## If the whole list is null
+                    if(is.null(unlist(r))) return ('Other')
+                    ## otherwise search along lists
+                    tag = unlist(lapply(r, getTags), use.names=FALSE)
+                    if(!is.null(tag)) tag[1] else  return("Other")
                 })
             }
         )
-    )
+    
+    return(time_bins)
 }
 
 #' @export
