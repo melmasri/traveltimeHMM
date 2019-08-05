@@ -1,10 +1,10 @@
 ---
-title: "An introduction to traveltimeHMM : Making reliable travel time predictions for routes on a road networks"
+title: "Introduction to traveltimeHMM: making reliable travel time predictions on road networks"
 author: "Mohamad Elmasri, Aurélie Labbe, Denis Larocque, Laurent Charlin and Éric Germain"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{An introduction to traveltimeHMM}
+  %\VignetteIndexEntry{Introduction to traveltimeHMM}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -14,13 +14,16 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-```
 
-Travel time prediction has many uses for individuals and organizations wishing to estimate the time it takes to complete a given route, but also to choose the best route available for a given trip.  Predictions are likely to be more useful if they include some reliability measure for the expected travel time.  The `traveltimeHMM` package leverages data on vehicle speeds on a set of road links at various points in time to predict the probability distribution of travel time on a given sequence of links, or trip.  The availability of full probability distributions allows better risk management during trip planning.  The package implements a version of the TRIP method proposed in Woodard et al. (2017).
+```
+In the new world of data, decision-making is becoming more data-driven then ever. This is increasingly true for urban transportation, where the ubiquitous expected time of arrival (ETA) is heavily used. Providing reliability measure for ETA's is likely to improve our understanding of travel time and to provide systems with better decision-making metrics. The `traveltimeHMM` package provides various methods to estimate the distribution of travel time on a given route. By leveraging GPS data from moving vehicles, this package estimates travel time for each road on the network, with flexible temporal binning, to provide travel time estimate on total routes. 
+
+Impelemented methods include the proposed TRIP model (and its variates) in Woodard et al. (2017). 
+
 
 ## Example data set: `tripset`
 
-We will use the example input data set `tripset` to explore the functionalities offered by `traveltimeHMM`.  The data from `tripset` comes from a research project and has been fully anonymised.  Data such as that found in `tripset` can be generated, for instance, using GPS data collected from mobile phones.  In the present case, a preprocessing stage was performed so that trip-, link- and time-based data items (which we will describe shortly) could be generated from GPS data points, rendering the latter unnecessary.  We stress that `traveltimeHMM` does not perform this preprocessing stage, and that the software cannot make use of GPS data points directly.
+We use the included data set `tripset` to explore the functionalities offered by `traveltimeHMM`.  The `tripset` comes from a research project and has been fully anonymised.  Data such as that found in `tripset` can be generated, for instance, using GPS data collected from mobile phones.  In the present case, a preprocessing stage was performed so that trip-, link- and time-based data items (which we will describe shortly) could be generated from GPS data points, rendering the latter unnecessary.  We stress that `traveltimeHMM` does not perform this preprocessing stage, and that the software cannot make use of GPS data points directly.
 
 ```{r}
 library(traveltimeHMM)
