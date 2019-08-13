@@ -16,14 +16,22 @@ knitr::opts_chunk$set(
 )
 
 ```
-In the new world of data, decision-making is becoming more data-driven then ever. This is increasingly true for urban transportation, where the ubiquitous expected time of arrival (ETA) is heavily used. Providing reliability measure for ETA's is likely to improve our understanding of travel time and to provide systems with better decision-making metrics. The `traveltimeHMM` package provides various methods to estimate the distribution of travel time on a given route. By leveraging GPS data from moving vehicles, this package estimates travel time for each road on the network, with flexible temporal binning, to provide travel time estimate on total routes. 
+# Introduction
+In the new world of data, decision-making is becoming more data-driven then ever. This is increasingly true for urban transportation, where the ubiquitous expected time of arrival (ETA) is heavily used. Providing reliability measure for ETA's is likely to improve our understanding of travel time and to provide systems with better decision-making metrics. This `traveltimeHMM` package provides various methods to estimate the distribution of travel time on a given route. This is done by by leveraging GPS data from moving vehicles on road segments, with flexible temporal binning, to provide travel time estimate for complete routes. 
 
-Impelemented methods include the proposed TRIP model (and its variates) in Woodard et al. (2017). 
+Impelemented methods include the proposed TRIP model (and its variates) in Woodard et al. (2017). Other methods methods are in the pipeline. 
+
+This is a work in progress. If you found a bug, please report it [here](https://github.com/melmasri/traveltimeHMM/issues), if would like to suggest (or provide) a feature please refer to the [main repository](https://github.com/melmasri/traveltimeHMM).
 
 
-## Example data set: `tripset`
+# Example data set: `tripset`
 
-We use the included data set `tripset` to explore the functionalities offered by `traveltimeHMM`.  The `tripset` comes from a research project and has been fully anonymised.  Data such as that found in `tripset` can be generated, for instance, using GPS data collected from mobile phones.  In the present case, a preprocessing stage was performed so that trip-, link- and time-based data items (which we will describe shortly) could be generated from GPS data points, rendering the latter unnecessary.  We stress that `traveltimeHMM` does not perform this preprocessing stage, and that the software cannot make use of GPS data points directly.
+This package includes a small data set (`tripset`) that aggregates map-matched anonymized mobile phone GPS data collected in Quebec city in 2014 using the Mon Trajet smartphone application developed by [Brisk Synergies Inc](https://brisksynergies.com/). The precise duration of the time period is kept confidential.
+
+We use `tripset` to explore the functionalities offered in this package. Data similar to `tripset` can be generated using other sources of GPS data, however, a preprocessing stage is necessary to map-match and aggregate the information up to the road segment (link) level. Such preprocessing is already performed on `tripset`.
+
+We stress that `traveltimeHMM` does not perform this preprocessing stage, and that the software cannot make use of raw GPS data.
+
 
 ```{r}
 library(traveltimeHMM)
@@ -31,7 +39,7 @@ data(tripset)
 head(tripset)
 ```
 
-Travel data is organized around the notions of *trips* and *links*.  Links are road segments each with well-defined beginning and end points and which can be traversed.  A vehicle performs a trip when it travels from a start point to an end point through a sequence of links.  Thus trips can be considered as ordered sequences of links.  The data set includes data for a collection of trips.
+Travel data is organized around the notions of *trips* and *links*.  Links are road segments each with well-defined beginning and end points and which can be traversed. A vehicle performs a trip when it travels from a start point to an end point through a sequence of links.  Thus trips can be considered as ordered sequences of links. `tripset` includes data for a collection of trips.
 
 - Field `tripID` contains each *trip*'s ID, whereas field `linkID` contains the IDs of each *link* making up a trip.  Both fields need to be numerical.  It is assumed that, in the data set, all trips are grouped together and all links of a given trip appear in the order in which they are traversed^[No verification is performed to that effect.].  A given link corresponds to some physical entity such as a road segment, a portion of a road segment, or any combination of those.  Hence it is expected that links are used in more than one trip.
 
@@ -47,7 +55,7 @@ names(z) <- c("Period of the week", "Time bin")
 knitr::kable(z, caption = "Table 1 - Example from `tripset` : Time bin by period of the week", escape = FALSE)
 ```
 
-- Field `logspeed` contains the natural logarithm of the *speed* (in km/h) of traversal of each link.  This information is central to the estimation algorithm.
+- Field `logspeed` contains the natural logarithm of the *speed* (in meter/second) of traversal of each link.  This information is central to the estimation algorithm.
 
 - Field `traveltime` refers to the traversal time (in seconds) of each link.  This field is mostly for reference and is not used directly in the package.
 
@@ -55,29 +63,30 @@ knitr::kable(z, caption = "Table 1 - Example from `tripset` : Time bin by period
 
 - Field `time` gives the start time in POSIXct format for the traversal of a given link.  Individual datums are not used directly; however, the start time of the very first traversal is likely to be useful for providing the start time of a whole trip to the prediction function.
 
-## The statistical model
+# Statistical models
 
-At the core of `traveltimeHMM` is a statistical model that aims at determining the probability distribution of the logarithm of *speeds* for each combination of *link* and *time bin*, on the basis of data just like that we just described.  We will first briefly present the model and its parameters.  We refer to Woodard et al. for an extensive description of the model.  We will subsequently present the four specific model types that are currently implemented.  Notably, some model types do not make use of all these parameters.
+At the core of `traveltimeHMM` is a statistical model that aims at determining the probability distribution of the logarithm of *speeds* for each combination of *link* and *time bin*, on the basis of data just like that we just described.  We will first briefly present the model and its parameters.  We refer to Woodard et al. (2016) for an extensive description of the model.  We will subsequently present the four specific model types that are currently implemented, each model utilizes a different set of parameters.
 
-#### The model and its parameters
+## Model parameters
 
-The most general model type of the four, the "trip-HMM" model, estimates the mean and standard deviation of the *speed probability distribution* for each combination of road link, time bin, and congestion state.  This latter concept involved defining a finite number of *hidden states* that reflect traffic fluidity in a given place at a given time, for instance the fact that one is driving downtown during rush hour (or not).  In our example, we chose to define two congestions states which we could implicitly call "not-congested" and "congested".
+The most general model is the `trip-HMM`, which estimates the mean and standard deviation of the *speed probability distribution* for each combination of road link, time bin, and congestion state.  This latter concept involved defining a finite number of *hidden states* that reflect traffic fluidity of a trip at a given place and time, for instance the fact that one is driving downtown during rush hour (or not), they might (or might not) fall into congestion at a specific link and time. Hence, conngestion level as a property of the individual trip, rather than as a property of the link and time. In our example, we chose to define two congestions states which we could implicitly call "not-congested" and "congested".
 
 In order to deal properly with the fact that the congestion states are unobserved, the model needs to also estimate parameters that define the *probability* of a combination of road link and time bin *reaching a given state*.  These estimates are computed using a Markov model.  Finally, the model estimates a *trip effect* that captures variability in speed due to trip-specific conditions (e.g. driver habits).
 
-Hence, the model parameters that are estimated are as follows.
+The estimate parameters of model `trip-HMM` are:
 
-* For each combination of road link $j$, time bin $b$ and congestion state $q$, we get:
+* for each combination of road link $j$, time bin $b$ and congestion state $q$, we get:
 
-    * The mean $\mu_{j,b,q}$ and standard deviation $\sigma_{j,b,q}$ of the speed probability distribution (on a logarithmic scale);
+    * The mean $\mu_{j,b,q}$ and standard deviation $\sigma_{j,b,q}$ of the log-speed probability distribution (assuming a Gaussian distribution);
     
-    * A vector $\gamma_{j,b}(q)$ which shows the probability of the congestion state $q$ for trips starting on link $j$ during $b$.
+    * A vector $\gamma_{j,b}(q)$ which shows the probability of the congestion state $q$ for trips starting on link $j$ during $b$; and
 
     * A transition matrix $\Gamma_{j,b}(\tilde{q},q)$ for the congestion state $q$ on $j$ and $b$, conditional on $\tilde{q}$, the congestion state in the previous link.
     
 * We also get the trip effect $\log(E_i) \sim N(0,\tau^2)$ for each trip $i$, as well as its standard deviation $\tau$.
 
-The other three model types are special cases of the most general model.  The "HMM" model type, which is the default type, makes abstraction of the trip effect: $\log(E_i)$ is restricted to $0$ whilst $\tau$ is set to $1$^[$\tau$ should also be set to $0$ instead of $1$.  ÉG 2019/07/25].  The "trip" model type instead considers the existence of a single congestion state; under this model the parameters $\gamma$ and $\Gamma$ remain undefined.  Finally, the "no-dependence" model type, which the most basic of the four, combines the restrictions of the "HMM" and "trip" model types and only takes into account parameters $\mu_{j,b,q}$ and $\sigma_{j,b,q}$ for the speed probability distribution.  Table 2 provides a summary of the characteristics of each model type.
+The other three model types are special cases of the most general model.  The `HMM` model, which is the default, assumes that the trip effect is fixed to 1 ($E_i=1$). The `trip` model
+considers the existence of a single traffic state (does not use the hidden states abstraction); under this model the parameters $\gamma$ and $\Gamma$ remain undefined.  Finally, the `no-dependence` model is the most basic of the four, combines the restrictions of the `HMM` and `trip` model types and only takes into account parameters $\mu_{j,b,q}$ and $\sigma_{j,b,q}$ for the speed probability distribution, hence not trip effect and no hidden Markov states. Table 2 provides a summary of the characteristics of each model type.
 
 ```{r echo = FALSE, results='asis'}
 library(knitr)
@@ -95,11 +104,11 @@ knitr::kable(z, caption = "Table 2 - Model typology", escape = FALSE, align = 'l
 
 ## Model estimation
 
-Model estimation is performed using Algorithm 1 from Woodard et al.  The estimation algorithm takes incoming data on speeds (on a logarithmic scale), trips, road links and time periods, and calculates a set of parameter estimates for the model.
+Model estimation is performed using Algorithm 1 from Woodard et al. (2016)  The estimation algorithm takes incoming data on speeds (on a logarithmic scale), trips, road links and time periods, and calculates a set of parameter estimates for the model.
 
 Calculations are performed iteratively as is typical of non-linear optimization algorithms.  The estimates for each parameter are updated at each iteration, and the algorithm stops when either the variation in parameter estimates between two successive iterations is below a predefined threshold value, or a predefined maximum number of iterations is reached.
 
-#### Calling `traveltimeHMM`
+## Calling `traveltimeHMM`
 
 The estimation algorithm can be executed by calling the `traveltimeHMM` function.  The function's interface is as follows.
 
@@ -136,11 +145,10 @@ fit <- traveltimeHMM(logspeeds = tripset$logspeed,
 
 As an example of the second calling approach, we construct and pass a single data frame object that contains those same four columns:
 ```{r eval=FALSE}
-tripobject <- tripset[,c("logspeed", "tripID", "timeBin", "linkID")]
-fit <- traveltimeHMM(tripframe = tripobject,
+fit <- traveltimeHMM(data = tripset,
                      nQ = 2,
                      max.it = 20,
-                     model = "HMM" # this is the default value)
+                     model = "HMM")
 ```
 
 Table 3 provides a description for each parameter.
@@ -201,7 +209,7 @@ names(z) <- ""
 knitr::kable(z, caption = "Table 3 - Parameters for `traveltimeHMM`", escape = FALSE)
 ```
 
-#### Markov transition matrix and initial state vector below
+## Markov transition matrix and initial state vector below
 
 If provided and valid, parameters `tmat.p` and `init.p` will be used as initial values for $\Gamma$ and $\gamma$.  Otherwise, the algorithm will assume initial equiprobability.  In our example, default initial values for the Markov transition matrix and initial state vector are:
 
@@ -215,7 +223,7 @@ If provided and valid, parameters `tmat.p` and `init.p` will be used as initial 
 
 Each row and column of $\Gamma$ and each row of $\gamma$ correspond to different congestion states $q_1,q_2,....$  Given $j$ and $b$, $\Gamma_{row,col|j,b}$ represents the probability of reaching state $q_{col}$ from state $q_{row}$, whilst $\gamma_{row|j,b}$ represents the probability of beginning a trip with state $q_{row}$.
 
-#### A word on imputation
+## A word on imputation
 
 The implementation allows imputing for combinations of road link and time bin for which the lack of sufficient observations prevents reliable parameter estimation.  When imputation is required for a given combination, estimates for $\mu$, $\sigma$, $\Gamma$ and $\gamma$ are calculated on the basis of data available for the time bin involved *for all road links*.  This approach differs from the one in Woodard et al., where imputation is performed on the basis of road classification data (e.g. "arterial" or "primary collector road").  This implementation does not handle road classification data.
 
@@ -229,7 +237,7 @@ Imputation is performed in the following three cases:
 
 The number of observations specified in parameter `L` determines the threshold below which imputation occurs for cases 1 and 2.
 
-#### Output from execution
+## Output from execution
 
 Below is some typical output from executing `travetimeHMM`.  One can find:
 
@@ -321,6 +329,7 @@ pred <- predict.traveltime(modelObject = fit,
                            starttime = single_trip$time[1],
                            nbRuns = 1000)
 ```
+                           
 
 Table 5 provides a description for each parameter.
 
@@ -347,7 +356,7 @@ names(z) <- ""
 knitr::kable(z, caption = "Table 5 - Parameters for `predict.traveltime`", escape = FALSE)
 ```
 
-#### Return values
+## Return values
 
 `predict.traveltime` returns a vector of size nbRuns of numerics representing the point prediction of total travel time, in seconds, for each run.
 
@@ -368,7 +377,7 @@ abline(v = mean(pred), lty=2, lwd=2)
 abline(v=sum(single_trip$traveltime), lty=2, lwd=2, col='red')
 ```
 
-## Model type comparison
+# Model type comparison
 
 Figure 2 shows the histograms of travel time for each of the four model types for the same example.  In this very case, the `HMM` model type seems to converge better than the other three to the observed travel time.
 
@@ -398,7 +407,7 @@ abline(v=sum(single_trip$traveltime), lty=2, lwd=2, col='red')
 
 ```
 
-## References
+# References
 
 Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  "Predicting travel time reliability using mobile phone GPS data".  *Transportation Research Part C*, 75, 30-44.  <http://dx.doi.org/10.1016/j.trc.2016.10.011>
 
