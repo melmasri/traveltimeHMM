@@ -5,7 +5,7 @@
 \title{Estimate trip- and link- specific speed parameters from observed average speeds}
 \usage{
 traveltimeHMM(logspeeds = NULL, trips = NULL, timeBins = NULL,
-  linkIds = NULL, tripframe = NULL, nQ = 1L, model = c("HMM",
+  linkIds = NULL, data = NULL, nQ = 1L, model = c("HMM",
   "trip-HMM", "trip", "no-dependence"), tol.err = 10, L = 10L,
   max.it = 20, verbose = FALSE, max.speed = NULL, seed = NULL,
   tmat.p = NULL, init.p = NULL, debug = FALSE)
@@ -19,7 +19,7 @@ traveltimeHMM(logspeeds = NULL, trips = NULL, timeBins = NULL,
 
 \item{linkIds}{A vector of link ids (route or way) for each observation of \code{speed}.}
 
-\item{tripframe}{A data frame or equivalent object that contains one column for each of test.}
+\item{data}{A data frame or equivalent object that contains one column for each of test.}
 
 \item{nQ}{An integer corresponding to the number of different congestion states that the traversal
 of a given link can take corresponding to \code{|{1...., Q}|}, \code{default = 1}.}

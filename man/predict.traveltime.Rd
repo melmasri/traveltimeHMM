@@ -4,11 +4,11 @@
 \alias{predict.traveltime}
 \title{Predict the travel time for a trip using a \code{traveltimeHMM} model object}
 \usage{
-\method{predict}{traveltime}(modelObject, tripdata,
-  starttime = Sys.time(), nbRuns = 1000, logE = NULL)
+\method{predict}{traveltime}(object, tripdata, starttime = Sys.time(),
+  n = 1000, logE = NULL)
 }
 \arguments{
-\item{modelObject}{A model object (a list) provided through the execution of function \code{timetravelHMM}.
+\item{object}{A model object (a list) provided through the execution of function \code{timetravelHMM}.
 The list includes information on model as well as estimates for its parameters.
 See \code{timetravelHMM} man page.}
 
@@ -19,15 +19,15 @@ and the latter must have the same length.  Rows must be in chronological order.}
 \item{starttime}{The start date and time for the very first link of the trip,
 in POSIXct format.  Default is the current date and time.}
 
-\item{nbRuns}{Number of simulation runs.  Default is 1000.}
+\item{n}{Number of samples.  Default is 1000.}
 
-\item{logE}{Point estimate of trip effects.  \code{logE} normally needs to be a vector of numerics of size \code{nbRuns}.
+\item{logE}{Point estimate of trip effects.  \code{logE} normally needs to be a vector of numerics of size \code{n}.
 If a single numeric value is supplied, it will be replicated into a vector.  If \code{logE} is \code{NULL}
 the function will use either a vector of simulated values (if the model is from the \code{trip} family),
 or a vector of \code{0} otherwise.  Default is \code{NULL}.}
 }
 \value{
-\code{predict.traveltime} returns a vector of size \code{nbRuns} of numerics representing the point prediction of total travel time, in seconds, for each run.
+\code{predict.traveltime} returns a vector of size \code{n} of numerics representing the point prediction of total travel time, in seconds, for each run.
 }
 \description{
 \code{predict.traveltime} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object.
