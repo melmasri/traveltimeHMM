@@ -100,3 +100,4 @@ tmat_est <- function(joint_prob,state_prob, init_ids, by_factor){
     # We return the ratio of 'num' over a modified 'den' with each column replicated nQ times consecutively.
     return(num/den[, rep(1:nQ, each = nQ)])
 }
+

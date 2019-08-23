@@ -6,7 +6,7 @@
 #' @param trips An integer or character vector of trip ids for each observation of \code{speed}.
 #' @param timeBins A character vector of time bins for each observation of \code{speed}.
 #' @param linkIds A vector of link ids (route or way) for each observation of \code{speed}.
-#' @param tripframe A data frame or equivalent object that contains one column for each of test.
+#' @param data A data frame or equivalent object that contains one column for each of test.
 #' @param nQ An integer corresponding to the number of different congestion states that the traversal
 #'   of a given link can take corresponding to \code{|{1...., Q}|}, \code{default = 1}.
 #' @param model Type of model as string, \code{trip-HMM} to use a hidden Markov model (HMM) with trip effect, \code{HMM} (default) is an HMM without trip effect,
@@ -70,7 +70,7 @@
 #'
 
 #' @export
-traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkIds = NULL, tripframe = NULL,
+traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkIds = NULL, data = NULL,
                           nQ = 1L, model = c("HMM", "trip-HMM","trip","no-dependence"),
                           tol.err = 10, L = 10L, max.it = 20, verbose = FALSE,
                           max.speed = NULL, seed = NULL, tmat.p = NULL,
@@ -78,19 +78,19 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
 
     # SECTION A - Parameter validation and related processing
   
-    # A.0 Either 'tripframe' or all of 'logspeeds', 'trips', 'timeBins' and 'linkIds' must be provided.
-    # Otherwise we stop.  Once this is checked for, we extract those fields from 'tripframe' if required.
-    frameAvailable <- !is.null(tripframe)
+    # A.0 Either 'data' or all of 'logspeeds', 'trips', 'timeBins' and 'linkIds' must be provided.
+    # Otherwise we stop.  Once this is checked for, we extract those fields from 'data' if required.
+    frameAvailable <- !is.null(data)
     singleParamsAvailable <- !is.null(logspeeds) & !is.null(trips) & !is.null(timeBins) & !is.null(linkIds)
     
     if(!xor(frameAvailable, singleParamsAvailable))
       stop("Either 'frame' or all of 'logspeeds', 'trips', 'timeBins' and 'linkIds' must be provided.")
     
     if(frameAvailable) {
-      logspeeds <- tripframe$logspeed
-      trips <- tripframe$tripID
-      timeBins <- tripframe$timeBin
-      linkIds <- tripframe$linkID
+      logspeeds <- data$logspeed
+      trips <- data$tripID
+      timeBins <- data$timeBin
+      linkIds <- data$linkID
     }
     
     # param <- list(...)  # Put this line back into code later only if required.

@@ -5,29 +5,29 @@
 #' 
 #' The value for \code{logE} in the model object passed as parameter is *NOT* used.
 #' 
-#' @param modelObject A model object (a list) provided through the execution of function \code{timetravelHMM}.
+#' @param object A model object (a list) provided through the execution of function \code{timetravelHMM}.
 #' @param logE Tentative values of point estimates of trip effects.
-#' @param nbRuns Number of simulation runs.
+#' @param n Number of samples. Default is 1000.
 #' 
 #' @return The function return a valid value for \code{logE}.  The value supplied as a parameter
-#'   for \code{logE} is normally a vector of numerics of size \code{nbRuns}, in which case it is
+#'   for \code{logE} is normally a vector of numerics of size \code{n}, in which case it is
 #'   returned *as is*.  If a single numeric value is supplied instead, it will be replicated into
 #'   a vector of the appropriate size which will be returned.  If \code{logE} is \code{NULL}
 #'   or invalid, then the function will return either a vector of simulated values
 #'   (if the model is from the \code{trip} family), or a vector of \code{0} otherwise.
 #' @export
-getValidE <- function(modelObject, logE, nbRuns) {
+getValidE <- function(object, logE, n) {
   # Part 1 of validation.  We check for the existence of a valid parameter logE
-  # of size either 1 or nbRuns
+  # of size either 1 or n
   if(!is.null(logE)) { # If a numeric parameter exists only...
     
-    # If parameter is a single numeric, convert to vector of size nbRuns
+    # If parameter is a single numeric, convert to vector of size n
     if(is.numeric(logE) && length(logE) == 1)
-      logE <- rep(logE, nbRuns)
+      logE <- rep(logE, n)
     
-    # If we don't end up with a vector of size nbRuns, send warning message.
-    if(!is.numeric(logE) || length(logE) != nbRuns) {
-      message("Values in parameter logE need to be a vector of length 'nbRuns'.  Values for logE are discarded.")
+    # If we don't end up with a vector of size n, send warning message.
+    if(!is.numeric(logE) || length(logE) != n) {
+      message("Values in parameter logE need to be a vector of length 'n'.  Values for logE are discarded.")
       logE <- NULL
     }
   }
@@ -37,9 +37,9 @@ getValidE <- function(modelObject, logE, nbRuns) {
   # Part 2 of validation: if logE is null...
   
   if(is.null(logE)) {
-    if(grepl('trip', modelObject$model)) 
-      logE = rnorm(nbRuns, mean = 0, sd = modelObject$tau) # ... we define a vector of random values if trip model...
-    else logE = rep(0, nbRuns) # ... otherwise we set to vector of zeros.
+    if(grepl('trip', object$model)) 
+      logE = rnorm(n, mean = 0, sd = object$tau) # ... we define a vector of random values if trip model...
+    else logE = rep(0, n) # ... otherwise we set to vector of zeros.
   }
   logE # We return the result.
   # How do we handle tau if logE is set to 0?  Currently it keeps its value.  ÉG 2019/07/25
@@ -54,7 +54,7 @@ getValidE <- function(modelObject, logE, nbRuns) {
 #' to the appropriate function according to the selected model: \code{predict.traveltime.HMM} for
 #' models of the \code{HMM} family, or \code{predict.traveltime.no_dependence} otherwise.
 #'  
-#' @param modelObject A model object (a list) provided through the execution of function \code{timetravelHMM}.
+#' @param object A model object (a list) provided through the execution of function \code{timetravelHMM}.
 #'   The list includes information on model as well as estimates for its parameters.
 #'   See \code{timetravelHMM} man page.
 #' @param tripdata A data frame of road links with information on each
@@ -62,13 +62,13 @@ getValidE <- function(modelObject, logE, nbRuns) {
 #'   and the latter must have the same length.  Rows must be in chronological order.
 #' @param starttime The start date and time for the very first link of the trip,
 #'   in POSIXct format.  Default is the current date and time.
-#' @param nbRuns Number of simulation runs.  Default is 1000.
-#' @param logE Point estimate of trip effects.  \code{logE} normally needs to be a vector of numerics of size \code{nbRuns}.
+#' @param n Number of samples.  Default is 1000.
+#' @param logE Point estimate of trip effects.  \code{logE} normally needs to be a vector of numerics of size \code{n}.
 #'   If a single numeric value is supplied, it will be replicated into a vector.  If \code{logE} is \code{NULL}
 #'   the function will use either a vector of simulated values (if the model is from the \code{trip} family),
 #'   or a vector of \code{0} otherwise.  Default is \code{NULL}.
 #' 
-#' @return \code{predict.traveltime} returns a vector of size \code{nbRuns} of numerics representing the point prediction of total travel time, in seconds, for each run.
+#' @return \code{predict.traveltime} returns a vector of size \code{n} of numerics representing the point prediction of total travel time, in seconds, for each run.
 #' 
 #' @examples
 #' \dontrun{
@@ -94,7 +94,7 @@ getValidE <- function(modelObject, logE, nbRuns) {
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-predict.traveltime<-function(modelObject, tripdata, starttime = Sys.time(),  nbRuns = 1000, logE = NULL){
+predict.traveltime<-function(object, tripdata, starttime = Sys.time(),  n = 1000, logE = NULL){
   
     # We first perform basic checks.  'tripdata' must be a list, data frame or data table
     # that minimally includes objects 'linkID' and 'length', the latter having
@@ -109,10 +109,10 @@ predict.traveltime<-function(modelObject, tripdata, starttime = Sys.time(),  nbR
     # Models of the HMM family ('HMM', 'trip-HMM') are handled by function 'predict.traveltime.HMM'
     # whilst others are handled by function 'predict.traveltime.no_dependence'
     # (both functions are below).
-    if(grepl('HMM', modelObject$model))
-      predict.traveltime.HMM(modelObject, tripdata, starttime, nbRuns, logE)
+    if(grepl('HMM', object$model))
+      predict.traveltime.HMM(object, tripdata, starttime, n, logE)
     else
-      predict.traveltime.no_dependence(modelObject, tripdata , starttime, nbRuns, logE)
+      predict.traveltime.no_dependence(object, tripdata , starttime, n, logE)
 }
 
 #' @keywords internal
@@ -123,7 +123,7 @@ predict.traveltime<-function(modelObject, tripdata, starttime = Sys.time(),  nbR
 #' The function implements Algorithm 2 from Woodard et al., 2017.  However, the state transition matrix
 #' and initial state probability vector are not handled as they were not generated at the estimation stage.
 #'  
-#' @param modelObject A model object (a list) provided through the execution of
+#' @param object A model object (a list) provided through the execution of
 #' function \code{timetravelHMM} for a \code{trip} or \code{no-dependence} model type.
 #' The list includes information on model as well as estimates
 #' for its parameters.  See \code{timetravelHMM} man page.
@@ -131,47 +131,47 @@ predict.traveltime<-function(modelObject, tripdata, starttime = Sys.time(),  nbR
 #'   link's traversal.  Columns minimally includes objects 'linkID' and 'length',
 #'   and the latter must have the same length.  Rows must be in chronological order.
 #' @param starttime The start date and time for the very first link of the trip, in POSIXct format.
-#' @param nbRuns Number of simulation runs.
-#' @param logE Point estimate of trip effects, in the form of a vector of numerics of size \code{nbRuns}.
+#' @param n Number of samples. Default is 1000.
+#' @param logE Point estimate of trip effects, in the form of a vector of numerics of size \code{n}.
 #' 
-#' @return \code{predict.traveltime.no_dependence} returns a vector of size \code{nbRuns} of numerics representing the point prediction of total travel time, in seconds, for each run.
+#' @return \code{predict.traveltime.no_dependence} returns a vector of size \code{n} of numerics representing the point prediction of total travel time, in seconds, for each run.
 #' 
 #' 
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-predict.traveltime.no_dependence <- function(modelObject, tripdata, starttime, nbRuns = 1000, logE = NULL) {
+predict.traveltime.no_dependence <- function(object, tripdata, starttime, n = 1000, logE = NULL) {
     linkIds = tripdata$linkID # Contains IDs of all links for a given trip
     len = tripdata$length # Contains the length (in km) of each link in 'linkIds'
-    logE <- getValidE(modelObject, logE, nbRuns) # Get a valid vector for 'logE'; see comments in function for details.
+    logE <- getValidE(object, logE, n) # Get a valid vector for 'logE'; see comments in function for details.
 
     # Get link+time factor ID for link on top of list and start time supplied
     fact = paste(linkIds[1], time_bins(starttime), sep = ".")
-    id = which(levels(modelObject$factors) == fact) # Find ID of factor corresponding to the string just created
+    id = which(levels(object$factors) == fact) # Find ID of factor corresponding to the string just created
 
     ###
     # Beginning implementation of Algorithm 2 (which we call Algo2 hereafter) in Woodard et al.
     #
     ## Initialize variables
     
-    # Generate a vector of size nbRuns of random speeds with mu and sigma supplied by 'modelObject'.
+    # Generate a vector of size n of random speeds with mu and sigma supplied by 'object'.
     # This corresponds to step 9 of Algo2, but only for the first iteration.
-    speed = rnorm(nbRuns, modelObject$mean[id, ], modelObject$sd[id, ])
-    tt = len[1] * exp(-speed - logE) # nbRuns-sized vector of total travel time
+    speed = rnorm(n, object$mean[id, ], object$sd[id, ])
+    tt = len[1] * exp(-speed - logE) # n-sized vector of total travel time
                                      # on first link: length * speed (adjusted for trip effect)
     for (k in 2:length(linkIds)) { # Loop for each link after the first
-        # Get nbRuns-sized vector of link+timebin factors
+        # Get n-sized vector of link+timebin factors
         fact = as.factor(paste(linkIds[k], time_bins(starttime + tt), sep = "."))
 
         # Get vector of link+time factor IDs for link supplied and resulting time
-        id = sapply(levels(fact), function(s) which(levels(modelObject$factors) == s, useNames = FALSE), USE.NAMES = FALSE)
-        ind = as.numeric(fact) # Get nbRuns-sized vector of factor IDs relative to vector 'id'
+        id = sapply(levels(fact), function(s) which(levels(object$factors) == s, useNames = FALSE), USE.NAMES = FALSE)
+        ind = as.numeric(fact) # Get n-sized vector of factor IDs relative to vector 'id'
 
-        # Step 9 of Algo2: generate a vector of size nbRuns of random speeds
-        # with mu and sigma supplied by 'modelObject'.
-        speed = rnorm(nbRuns, modelObject$mean[id[ind], ], modelObject$sd[id[ind], ])
+        # Step 9 of Algo2: generate a vector of size n of random speeds
+        # with mu and sigma supplied by 'object'.
+        speed = rnorm(n, object$mean[id[ind], ], object$sd[id[ind], ])
 
-        # Step 10 of Algo2: generate a vector of size nbRuns of traversal times for the current link
+        # Step 10 of Algo2: generate a vector of size n of traversal times for the current link
         tt = tt + len[k] * exp(-speed - logE) # total travel time for the current link
                                               # = length * speed (adjusted for trip effect)
     }
@@ -186,7 +186,7 @@ predict.traveltime.no_dependence <- function(modelObject, tripdata, starttime, n
 #' The function implements Algorithm 2 from Woodard et al., 2017, including its handling
 #' of the state transition matrix and initial state probability vector.
 #'  
-#' @param modelObject A model object (a list) provided through the execution of
+#' @param object A model object (a list) provided through the execution of
 #' function \code{timetravelHMM} for a \code{trip-HMM} or \code{HMM} model type.
 #' The list includes information on model as well as estimates
 #' for its parameters.  See \code{timetravelHMM} man page.
@@ -194,23 +194,23 @@ predict.traveltime.no_dependence <- function(modelObject, tripdata, starttime, n
 #'   link's traversal.  Columns minimally includes objects 'linkID' and 'length',
 #'   and the latter must have the same length.  Rows must be in chronological order.
 #' @param starttime The start date and time for the very first link of the trip, in POSIXct format.
-#' @param nbRuns Number of simulation runs.
-#' @param logE Point estimate of trip effects, in the form of a vector of numerics of size \code{nbRuns}.
+#' @param n Number of samples. Default is 1000.
+#' @param logE Point estimate of trip effects, in the form of a vector of numerics of size \code{n}.
 #' 
-#' @return \code{predict.traveltime.HMM} returns a vector of size \code{nbRuns} of numerics representing the point prediction of total travel time, in seconds, for each run.
+#' @return \code{predict.traveltime.HMM} returns a vector of size \code{n} of numerics representing the point prediction of total travel time, in seconds, for each run.
 #' 
 #' 
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-predict.traveltime.HMM <- function(modelObject, tripdata, starttime, nbRuns, logE) {
+predict.traveltime.HMM <- function(object, tripdata, starttime, n, logE) {
     linkIds = tripdata$linkID # Contains IDs of all links for a given trip
     len = tripdata$length # Contains the length (in km) of each link in 'linkIds'
-    logE <- getValidE(modelObject, logE, nbRuns) # Get a valid vector for 'logE'; see comments in function for details.
-    nQ = modelObject$nQ # Get number of states from modelObject.
+    logE <- getValidE(object, logE, n) # Get a valid vector for 'logE'; see comments in function for details.
+    nQ = object$nQ # Get number of states from object.
 
     # Get link+time factor ID for link on top of list and start time supplied
-    id = which(levels(modelObject$factors) == paste(linkIds[1], time_bins(starttime), 
+    id = which(levels(object$factors) == paste(linkIds[1], time_bins(starttime), 
                          sep = "."), useNames = FALSE)
     if(length(id)==0) # Stop if no such factor is found
       stop("No link and time combination corresponds to those supplied at the beginning.  Stopping.")
@@ -220,31 +220,31 @@ predict.traveltime.HMM <- function(modelObject, tripdata, starttime, nbRuns, log
     #
     ## Initialize variables
     
-    # Step 3 of Algo2: generate a vector of states 1:nQ of size nbRuns.
-    # The probability of each state is fixed and provided in modelObject$init
+    # Step 3 of Algo2: generate a vector of states 1:nQ of size n.
+    # The probability of each state is fixed and provided in object$init
     # for the first link and start time supplied).
-    Qk = sample.int(nQ, nbRuns, replace = TRUE, prob = modelObject$init[id, ])
+    Qk = sample.int(nQ, n, replace = TRUE, prob = object$init[id, ])
 
-    # Generate a vector of size nbRuns of random speeds with mu and sigma supplied by 'modelObject'.
+    # Generate a vector of size n of random speeds with mu and sigma supplied by 'object'.
     # This corresponds to step 9 of Algo2, but only for the first iteration.
-    speed = rnorm(nbRuns, modelObject$mean[id, Qk], modelObject$sd[id, Qk])
+    speed = rnorm(n, object$mean[id, Qk], object$sd[id, Qk])
     
-    tt = len[1] * exp(-speed - logE) # nbRuns-sized vector of total travel time
+    tt = len[1] * exp(-speed - logE) # n-sized vector of total travel time
                                      # on first link: length * speed (adjusted for trip effect)
     if (length(linkIds) > 1)
         for (k in 2:length(linkIds)) { # Loop for each link after the first
           
-            # Get nbRuns-sized vector of link+timebin factors
+            # Get n-sized vector of link+timebin factors
             # (This saves about 50ms for 117 routes (.4 ms per route))
             fact = as.factor(paste(linkIds[k], time_bins(starttime + tt), sep = "."))
 
             # Get vector of link+time factor IDs for link supplied and resulting time
-            id = sapply(levels(fact), function(s) which(levels(modelObject$factors) == 
+            id = sapply(levels(fact), function(s) which(levels(object$factors) == 
                 s, useNames = FALSE), USE.NAMES = FALSE)
             if(length(id)==0) # Stop if no such factor is found
               stop(paste("No link and time combination corresponds to those supplied at k =", k, ".  Stopping."))
             
-            ind = as.numeric(fact) # Get nbRuns-sized vector of factor IDs relative to vector 'id'
+            ind = as.numeric(fact) # Get n-sized vector of factor IDs relative to vector 'id'
             indIds = (1:length(id) - 1) * nQ
             ## indIds is suppsed to be the first index of each unique factor, if length(id) =1 , indIds = c(0,0), if length(id)=2 then inIds = c(0,2)
             ## the logic behind indIds, is that if nQ =2, then the first two rows for tmat2 corresponds to the first unique factor, the second 2 rows to the second unique factor
@@ -255,7 +255,7 @@ predict.traveltime.HMM <- function(modelObject, tripdata, starttime, nbRuns, log
             
             # When there's more than 1 id,
             # aren't we mixing data from different factors???  ÉG 2019/06/19
-            tmat2 = matrix(c(t(modelObject$tmat[id, ])), ncol = nQ, byrow = TRUE)
+            tmat2 = matrix(c(t(object$tmat[id, ])), ncol = nQ, byrow = TRUE)
             ## tmat2 is an nQ x length(id)
             ## the first two rows are the transition of levels(fact)[1], the seond 2 rows are the transitions of levels(fact)[2], and so on.
             # if nQ =2 , lenth(id)=1 this is 2x2 matrix tmat[1, ] = (q1,q1), (q1,q2), (q2,q1), (q2,q2),
@@ -270,15 +270,15 @@ predict.traveltime.HMM <- function(modelObject, tripdata, starttime, nbRuns, log
             ## if the old state is 1 then  tmat2[indIds[ind] + Qk, ] returne row 7 = indIds[4] + 1, otherwise returns row 8
             ## and so on.
             ## QK below samples a new state based on the new tmat2, which correspods now to 1 row per unqiue factor, and it is the row of the transition matrix of the old state.
-            ## now that I think about it, I am not sure about this line tmat2 = t(apply(tmat2, 1, cumsum)), need to be checked.            Qk = max.col(runif(nbRuns) < tmat2, "first")
+            ## now that I think about it, I am not sure about this line tmat2 = t(apply(tmat2, 1, cumsum)), need to be checked.            Qk = max.col(runif(n) < tmat2, "first")
 
-            # Step 9 of Algo2: generate a vector of size nbRuns of random speeds
-            # with mu and sigma supplied by 'modelObject'.
-            speed = rnorm(nbRuns, modelObject$mean[cbind(id[ind], Qk)], modelObject$sd[cbind(id[ind], Qk)])
+            # Step 9 of Algo2: generate a vector of size n of random speeds
+            # with mu and sigma supplied by 'object'.
+            speed = rnorm(n, object$mean[cbind(id[ind], Qk)], object$sd[cbind(id[ind], Qk)])
 
-            # Step 10 of Algo2: generate a vector of size nbRuns of traversal times for the current link
+            # Step 10 of Algo2: generate a vector of size n of traversal times for the current link
             tt = tt + len[k] * exp(-speed - logE) # total travel time for the current link
-                                                  # = length * speed (adjusted for trip effect)
+                                        # = length * speed (adjusted for trip effect)
         }
     tt
 }
