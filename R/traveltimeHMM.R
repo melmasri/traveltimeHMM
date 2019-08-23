@@ -146,8 +146,8 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
     init <- matrix(init.0, nrow = nB * nlinks, ncol = nQ, byrow = TRUE)
     tmat <- matrix(tmat.0, nrow = nB * nlinks, ncol = nQ2, byrow = TRUE)
     
-    ## Trip-effect 
-    tau2 = 1
+    ## Trip-effect
+    if(grepl('trip', model)) tau2 <- 1 else tau2  <- 0
     if(grepl('trip', model)) E <- rnorm(nTrips, 0, sqrt(tau2)) else E <- numeric(nTrips)
     ## Empty variables
     initNew <- tmatNew <- mu_speedNew <- var_speedNew <- NULL
