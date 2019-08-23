@@ -247,7 +247,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
     tmat <- matrix(tmat.0, nrow = nB * nlinks, ncol = nQ2, byrow = TRUE)
     
     # Modelling the trip effect logE: see eq. (1) from Woodard et al.
-    tau2 = 1 # set initial value for tau2: see eq. (5) from Woodard et al.
+    if(grepl('trip', model)) tau2 = 1 else tau2 = 0 # set initial value for tau2: see eq. (5) from Woodard et al.
     
     # We create the vector logE of length nTrips as follows:
     # if model is "trip-HMM" or "trip" then each Ei has a random value of mean 0 and variance tau2;
