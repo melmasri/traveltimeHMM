@@ -123,6 +123,7 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
     tmat.0 <-rep(rep(1, nQ)/nQ, nQ)
     ## sampling initial values if seed is passed
     if(!is.null(param$seed) && is.numeric(param$seed)){
+        set.seed(param$seed)
         init.0 <- runif(nQ)
         init.0 <- init.0/sum(init.0)
         tmat.0 <- matrix(runif(nQ^2), nQ, nQ)
@@ -145,8 +146,8 @@ traveltimeHMM <- function(speeds, trips, timeBins, linkIds, nQ = 1L,
     init <- matrix(init.0, nrow = nB * nlinks, ncol = nQ, byrow = TRUE)
     tmat <- matrix(tmat.0, nrow = nB * nlinks, ncol = nQ2, byrow = TRUE)
     
-    ## Trip-effect 
-    tau2 = 1
+    ## Trip-effect
+    if(grepl('trip', model)) tau2 <- 1 else tau2  <- 0
     if(grepl('trip', model)) E <- rnorm(nTrips, 0, sqrt(tau2)) else E <- numeric(nTrips)
     ## Empty variables
     initNew <- tmatNew <- mu_speedNew <- var_speedNew <- NULL

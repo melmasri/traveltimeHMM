@@ -56,12 +56,16 @@ tmat_est <- function(joint_prob,state_prob, init_ids, by_factor){
     nQ <- ncol(state_prob)
     nQ2 <- nQ^2
     nObs <- nrow(state_prob)
+
+    joint_prob = joint_prob[-c(init_ids[-1] - 1), ] # removing first obs per trip
+    by_factor  = by_factor[-init_ids]               # removing first obs per trip
     
-    num = vapply(split(joint_prob, by_factor[-1]), function(r) .colSums(r,length(r)/nQ2, nQ2), numeric(nQ2), USE.NAMES = FALSE)
+    num = vapply(split(joint_prob, by_factor), function(r) .colSums(r,length(r)/nQ2, nQ2), numeric(nQ2), USE.NAMES = FALSE)
     num = matrix(drop(num), ncol = nQ2, byrow = TRUE)
-    den <- state_prob
-    den[init_ids[-1] - 1, ] <- 0
-    den = vapply(split(den[-nObs, ], by_factor[-1]), function(r) .colSums(r, length(r)/nQ, nQ), numeric(nQ), USE.NAMES = FALSE)
+    
+    den <- state_prob[-c(init_ids[-1] - 1, nObs),] # removing last obs per trip
+    den = vapply(split(den, by_factor), function(r) .colSums(r, length(r)/nQ, nQ), numeric(nQ), USE.NAMES = FALSE)
     den = matrix(drop(den), ncol = nQ, byrow = TRUE)
     return(num/den[, rep(1:nQ, each = nQ)])
 }
+
