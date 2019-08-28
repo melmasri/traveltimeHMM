@@ -28,14 +28,14 @@ knitr::opts_chunk$set(
 # Introduction
 In the new world of data, decision-making is becoming more data-driven then ever. This is increasingly true for urban transportation, where the ubiquitous expected time of arrival (ETA) is heavily used. Providing reliability measure for ETA's is likely to improve our understanding of travel time and to provide systems with better decision-making metrics. This `traveltimeHMM` package provides various methods to estimate the distribution of travel time on a given route, by leveraging GPS data from moving vehicles on road segments, with flexible temporal binning.
 
-Implemented methods include the proposed TRIP model (and its variants) in Woodard et. al. (2016). Other methods are currently being considered for inclusion. 
+Implemented methods include the proposed TRIP model (and its variates) in Woodard et. al. (2016). Other methods are in the pipeline. 
 
 This is a work in progress. For bugs and features, please refer to [here](https://github.com/melmasri/traveltimeHMM/issues).
 
 
 # Example data set: `tripset`
 
-This package includes a small data set (`tripset`) that aggregates map-matched mobile phone GPS data collected in Quebec city in 2014 using the Mon Trajet smartphone application developed by [Brisk Synergies Inc](https://brisksynergies.com/). In order to fully preserve the anonymity of the travellers, participant IDs were not included in the data set, and the beginning and end of each trip were removed manually.  As a consequence the precise duration of each trip’s duration cannot be inferred.
+This package includes a small data set (`tripset`) that aggregates map-matched anonymized mobile phone GPS data collected in Quebec city in 2014 using the Mon Trajet smartphone application developed by [Brisk Synergies Inc](https://brisksynergies.com/). The precise duration of the time period is kept confidential.
 
 `tripset` is used to explore methods offered in this package. Data similar to `tripset` can be generated using other sources of GPS data, however, a preprocessing stage is necessary to map-match and aggregate the information up to the road segment (link) level. Such preprocessing is already performed on `tripset`.
 
@@ -47,9 +47,9 @@ data(tripset)
 head(tripset)
 ```
 
-Travel data is organized around the notions of *trips* and *links*.  Links are road segments each with well-defined beginning and end points and which can be traversed. A vehicle performs a trip when it travels from a start point to an end point through a sequence of links.  Thus, trips can be considered as ordered sequences of links. `tripset` includes data for a collection of trips.
+Travel data is organized around the notions of *trips* and *links*.  Links are road segments each with well-defined beginning and end points and which can be traversed. A vehicle performs a trip when it travels from a start point to an end point through a sequence of links.  Thus trips can be considered as ordered sequences of links. `tripset` includes data for a collection of trips.
 
-- Field `tripID` contains each *trip*'s ID, whereas field `linkID` contains the IDs of each *link* making up a trip. Both fields need to be numerical. It is assumed that, in the data set, all trips are grouped together, and all links of a given trip appear in the order in which they are traversed (no verification is performed to that effect).  A given link corresponds to some physical entity such as a road segment, a portion of a road segment, or any combination of those. Hence, it is expected that links are used in more than one trip.
+- Field `tripID` contains each *trip*'s ID, whereas field `linkID` contains the IDs of each *link* making up a trip. Both fields need to be numerical. It is assumed that, in the data set, all trips are grouped together and all links of a given trip appear in the order in which they are traversed (No verification is performed to that effect).  A given link corresponds to some physical entity such as a road segment, a portion of a road segment, or any combination of those. Hence, it is expected that links are used in more than one trip.
 
 - Field `timeBin` (character string, or factor) refers to the time "category" when the traversal of a given link occurred.  Time bins should reflect as much as possible time periods of the week encompassing similar traffic classes.  In `tripset` we define five time bins: `Weekday`, `MorningRush`, `EveningRush`, `EveningNight` and `Weekendday`.
 
@@ -70,21 +70,21 @@ knitr::kable(z, caption = "Table 1 - Example from `tripset` : Time bin by period
 
 - Field `length` refers to the length (in meters) of each link.  This information is used by the prediction algorithm.
 
-- Field `time` gives the entry time in POSIXct format for the traversal of a given link.  Individual datums are not used directly for estimation.  However, they are required by the prediction function for determining the time bin of each traversal.  Also, the start time of the very first traversal is likely to be useful for providing the start time of a whole trip to the prediction function.  Field `time` determine the time bin for each link, as illustrated in Table 1.
+- Field `time` gives the entry time in POSIXct format for the traversal of a given link.  Individual datums are not used directly; however, the start time of the very first traversal is likely to be useful for providing the start time of a whole trip to the prediction function. Field `time` determine the time bin for each link, as illustrated in Table 1.
 
 `traveltimeHMM` includes functionality to convert time stamps to alternative time bins, please refer to [Time bins](Time bins).
 
 # Statistical models
 
-At the core of `traveltimeHMM` is a statistical model that aims to  approximate the distribution of travel time over a combination of *links* and a *start time*, based on data like `tripset`. `traveltimeHMM` includes multiple models, including the ones in Woodard et. al. (2016). The following sections describe each model implementation.
+At the core of `traveltimeHMM` is a statistical model that aims to  approximate the distribution of travel time over a combination of *links* and a *start time*, on the basis of data just like that we just described. `traveltimeHMM` includes multiple models, including the ones in Woodard et. al. (2016). The following sections describe each model implementation.
 
-Woodard et. al. (2016) models are built around an HMM construction. The most general model is the `trip-HMM`, which estimates the mean and standard deviation of the *speed* for each combination of road link, time bin, and congestion state. This latter concept involves defining a finite number of *hidden states* that reflect traffic fluidity of a trip at a given place and time. For instance, the fact that one is driving downtown during rush hour (or not), they might (or might not) fall into congestion at a specific link and time. Hence, congestion level is a property of the individual trip, rather than a property of the link and time. In our example, we chose to define two congestion states which we implicitly call "congested" and "not-congested".
+## Woodard Models
+
+Woodard et. al. (2016) models are built around an HMM construction. The most general model is the `trip-HMM`, which estimates the mean and standard deviation of the *speed* for each combination of road link, time bin, and congestion state. This latter concept involve defining a finite number of *hidden states* that reflect traffic fluidity of a trip at a given place and time. For instance the fact that one is driving downtown during rush hour (or not), they might (or might not) fall into congestion at a specific link and time. Hence, congestion level as a property of the individual trip, rather than a property of the link and time. In our example, we chose to define two congestion states which we implicitly call "congested" and "not-congested".
 
 In order to deal properly with the fact that the congestion states are unobserved, the model estimates parameters for each hidden state. These estimates are computed using a Markov model and Viterbi forward-backward algorithm. To capture variability in speed due to trip-specific conditions (e.g. driver habits), the model also estimates a random *trip effect*.
 
-## TRIP model (Woodard): Main model
-
-Let $T_{i,k}$ be the travel time of trip $i$ on road link $R_k$, here $R_k$ is the unique road link in the map representing the $k$-th traversed link on the travel path of trip $i$, such that 
+Let $T_{i,k}$ be the travel time of trip $i$ on road $R_k$, here $R_k$ is the unique road in the map representing the $k$-th traversed road on the travel path of trip $i$, such that 
 
 $$T_{i,k} = \frac{d_{i,k}}{E_iS_{i,k}}, \quad i \in I, k \in \{1, \dots, n_i\},$$
 
@@ -93,16 +93,18 @@ where $S_{i,k}$ is the trip's $i$ speed on link $k$ of length $d_{i,k}$, and $E_
 $$\log E_i \sim N(0, \tau^2).$$
 
 The speed distribution is modelled as a log-normal, with parameters $\mu$ and $\sigma$, as
-$$\log S_{i,k}\mid Q_{i,k} \sim N( \mu_{R_{i,k}, b_{i,k}, Q_{i,k}},  \sigma^2_{R_{i,k}, b_{i,k}, Q_{i,k}}) $$
-where $N$ is the normal distribution, and $Q_{i,k}$ is a hidden state representing congestion, $b_{i,k} \in B$ is a set of time bins on link $k$.  *Note that the congestion state (hidden state) definition imposes the following constraint on the mean log-speed: $$\quad \mu_{j,b,q-1} \leq \mu_{j,b,q}$$
+$$\log S_{i,k}\mid Q_{i,k} \sim N( \mu_{R_{i,k}, b_{i,k}, Q_{i,k}},  \sigma^2_{R_{i,k}, b_{i,k}, Q_{i,k}}) , \quad \text{with} \quad \mu_{j,b,q-1} \leq \mu_{j,b,q}$$
+where $N$ is the normal distribution, and $Q_{i,k}$ is a hidden state representing congestion, $b_{i,k} \in B$ is a set of time bins on link $k$.
 
 The transition states are defined as
 $$P(Q_{i,1}=q) =  \gamma_{R_{i,1}, b_{i,1}} (q)$$
 $$P (Q_{i,k}= q \mid Q_{i,k-1}=q') = \Gamma_{R_{i,k}, b_{i,k}} (q',q)$$
 
 
-## TRIP model (Woodard): Variants
-The other three models are special cases of `trip-HMM` described above and Table 2 provides a summary of the characteristics of each model.
+### Variants
+The other three models are special cases of `trip-HMM` described above.
+
+The `HMM` model, which is the default, assumes that the trip effect is fixed to 1 ($E_i=1$). The `trip` model considers the existence of a single traffic state (does not use the hidden states abstraction); under this model the parameters $\gamma$ and $\Gamma$ remain undefined. Finally, the `no-dependence` model is the most basic of the four, assumes no trip effect and no hidden Markov states. Table 2 provides a summary of the characteristics of each model.
 
 ```{r echo = FALSE, results='asis'}
 library(knitr)
@@ -111,18 +113,16 @@ x1 <- c("trip-HMM", "HMM (default)", "trip", "no-dependence")
 x2 <- c("YES", "YES", "NO", "NO")
 x3 <- c("YES", "NO", "YES", "NO")
 z <- data.frame(cbind(x1, x2, x3))
-names(z) <- c("Model name", "Hidden Markov model (`HMM`)", "Trip effect model (`trip`)")
+names(z) <- c("Model type", "Hidden Markov model (`HMM`)", "Trip effect model (`trip`)")
 knitr::kable(z, caption = "Model typology", escape = FALSE, align = 'lcc', booktabs=TRUE) %>%
   kable_styling(full_width = F) %>%
   column_spec(1, width = "4cm") %>%
   column_spec(2:3, width = "3cm")
 ```
 
-The `HMM` model, which is the default, assumes that the trip effect is fixed to 1 ($E_i=1$). The `trip` model considers the existence of a single traffic state (does not use the hidden states abstraction); under this model the parameters $\gamma$ and $\Gamma$ remain undefined. Finally, the `no-dependence` model, which is the most basic of the four, assumes no trip effect and no hidden Markov states.
-
 # Model estimation
 
-Model estimation is performed using Algorithm 1 of Woodard et al. (2016). The estimation algorithm takes input data on speeds (on a logarithmic scale), trips, road links and time periods, and calculates a set of parameter estimates for a specified model.
+Model estimation is performed using Algorithm 1 of Woodard et al. (2016) The estimation algorithm takes input data on speeds (on a logarithmic scale), trips, road links and time periods, and calculates a set of parameter estimates for a specified model.
 
 Calculations are performed iteratively as is typical of non-linear optimization algorithms. The estimates for each parameter are updated at each iteration, and the algorithm stops when either the variation in parameter estimates between two successive iterations is below a predefined threshold value, or a predefined maximum number of iterations is reached.
 
@@ -151,6 +151,21 @@ traveltimeHMM(logspeeds = NULL,
 
 `traveltimeHMM` can be called either using *explicit parameters* or using a *composite object* incorporating the main parameters, for example, a `data.frame`.
 
+Explicit calling is as 
+```{r eval=FALSE}
+fit <- traveltimeHMM(logspeeds = tripset$logspeed,
+                     trips = tripset$tripID,
+                     timeBins = tripset$timeBin,
+                     linkIds = tripset$linkID,
+                     nQ = 2,
+                     max.it = 20,
+                     model = "HMM" # this is the default value)
+```
+
+Or using the `tripset` `data.frame` as
+```{r eval=FALSE}
+fit <- traveltimeHMM(data = tripset,nQ = 2,max.it = 20, model = "HMM")
+```
 Table 3 provides a description for each parameter.
 
 ```{r echo = FALSE, results='asis'}
@@ -169,10 +184,10 @@ r <- rbind(r,
            c("`linkIds`", "A vector of link ids (route or way) for each observation of `speed`.  Needs to be provided if and only if `tripframe` is NULL.  Default is NULL."))
 
 r <- rbind(r,
-           c("`tripframe`", "A data frame or equivalent object that contains one column for each of `logspeeds`, `trips`, `timeBins` and `linkIds`.  Default is NULL.  This argument is mutually exclusive with the full joint set of `logspeeds`, `trips`, `timeBins` and `linkIds`."))
+           c("`data`", "A data frame or equivalent object that contains one column for each of test.  Default is NULL.  Mutually exclusive with the full joint set of `logspeeds`, `trips`, `timeBins` and `linkIds`."))
 
 r <- rbind(r,
-           c("`nQ`", "An integer corresponding to the number of different congestion states that the traversal of a given link can take corresponding to `{1, ..., Q}`.    Hidden Markov models (see table 2) require `nQ >= 2` whilst other models require exactly `nQ = 1`.  As an example, Woodard uses `nQ = 1`.  Default is `1`."))
+           c("`nQ`", "An integer corresponding to the number of different congestion states that the traversal of a given link can take corresponding to `{1, ..., Q}`.    Models of the HMM family require `nQ >= 2` whilst other models require exactly `nQ=1`.  Default is `1`."))
 
 r <- rbind(r,
            c("`model`", "Type of model as string.  Can take one of '`trip-HMM`', '`HMM`', '`trip`' or '`no-dependence`'.  Default is '`HMM`'.  See Table 3 for details."))
@@ -190,16 +205,16 @@ r <- rbind(r,
            c("`verbose`", "A boolean that triggers verbose output.  Default is `FALSE`."))
 
 r <- rbind(r,
-           c("`max.speed`", "An optional float for the maximum speed in km/h, on the linear scale (not the log-scale, unlike for `logspeeds`).  Default is `NULL` which results in a maximum speed of 130 km/h.  If there is any occurrence of speed in excel of `max.speed`, then the system issues to the user a warning that includes the percentage of such occurrences."))
+           c("`max.speed`", "An optional float for the maximum speed in km/h, on the linear scale (not the log-scale, unlike for `logspeeds`).  Default is `NULL` which in practice results in a maximum speed of 130 km/h. "))
 
 r <- rbind(r,
            c("`seed`", "An optional float for the seed used for the random generation of the first Markov transition matrix and initial state vector.  Default is `NULL`. If not provided, then those objects are generated deterministically. The effect of `seed` is cancelled by tmat.p or init.p when provided."))
 
 r <- rbind(r,
-           c("`tmat.p`", "An optional starting value for the Markov transition matrix $\\Gamma$ of size `nQ` \\times `nQ` with rows summing to $1$.  Default is `NULL`.  See section on Markov transition matrix and initial state vector below."))
+           c("`tmat.p`", "An optional Markov transition matrix $\\Gamma$ of size `nQ` \\times `nQ` with rows summing to $1$.  Default is `NULL`.  See section on Markov transition matrix and initial state vector below."))
 
 r <- rbind(r,
-           c("`init.p`", "An optional starting value for the Markov initial state vector $\\gamma$ of size `nQ` with elements summing to $1$.  Default is `NULL`.    See section on Markov transition matrix and initial state vector below."))
+           c("`init.p`", "An optional Markov initial state vector $\\gamma$ of size `nQ` with elements summing to $1$.  Default is `NULL`.    See section on Markov transition matrix and initial state vector below."))
 
 r <- rbind(r,
            c("`debug`", "A boolean with value `TRUE` if we want debug information to be generated.  Default is `FALSE`."))
@@ -209,32 +224,16 @@ names(z) <- ""
 knitr::kable(z, caption = "Table 3 - Parameters for `traveltimeHMM`", escape = FALSE)
 ```
 
-Explicit calling is as 
-```{r eval=FALSE}
-fit <- traveltimeHMM(logspeeds = tripset$logspeed,
-                     trips = tripset$tripID,
-                     timeBins = tripset$timeBin,
-                     linkIds = tripset$linkID,
-                     nQ = 2,
-                     max.it = 20,
-                     model = "HMM" # this is the default value)
-```
-
-Or using the `tripset` `data.frame` as
-```{r eval=FALSE}
-fit <- traveltimeHMM(tripframe = tripset,nQ = 2,max.it = 20, model = "HMM")
-```
-
 ## Markov transition matrix and initial state vector
     
-If provided and valid, parameters `tmat.p` and `init.p` will be used as starting values for $\Gamma$ and $\gamma$.  Otherwise, the algorithm will assume initial probabilities to be uniform, as $\Gamma^{(0)}_{i,b} = 1/nQ$, and $\gamma_{j,b}^{(0)} = 1/nQ$.  Each row and column of $\Gamma$ and each row of $\gamma$ correspond to different congestion states $q_1,q_2,....$  Given $j$ and $b$, $\Gamma_{row,col|j,b}$ represents the probability of reaching state $q_{col}$ from state $q_{row}$, whilst $\gamma_{row|j,b}$ represents the probability of beginning a trip with state $q_{row}$.
+If provided and valid, parameters `tmat.p` and `init.p` will be used as initial values for $\Gamma$ and $\gamma$.  Otherwise, the algorithm will assume initial probabilities to be uniform, as $\Gamma^{(0)}_{i,b} = 1/nQ$, and $\gamma_{j,b}^{(0)} = 1/nQ$.  Each row and column of $\Gamma$ and each row of $\gamma$ correspond to different congestion states $q_1,q_2,....$  Given $j$ and $b$, $\Gamma_{row,col|j,b}$ represents the probability of reaching state $q_{col}$ from state $q_{row}$, whilst $\gamma_{row|j,b}$ represents the probability of beginning a trip with state $q_{row}$.
     
 
 ## A word on imputation
 
 The implementation allows imputing for combinations of road links and time bins, for which the lack of sufficient observations prevents reliable parameter estimation.  When imputation is required for a given combination, estimates for $\mu$, $\sigma$, $\Gamma$ and $\gamma$ are calculated on the basis of data available for the time bin involved *for all road links*.
 
-This approach differs from the one in Woodard et.al.(2016), where imputation is performed on the basis of road classification data (e.g. "arterial" or "primary collector road").  The current implementation does not handle road classification data.
+This approach differs from the one in Woodard et.al.(2016), where imputation is performed on the basis of road classification data (e.g. "arterial" or "primary collector road").  This implementation does not handle road classification data.
 
 Imputation is performed in the following three cases:
 
@@ -248,7 +247,7 @@ The number of observations specified in parameter `L` determines the threshold b
 
 ## Execution user messages
 
-Below is some typical output from executing `traveltimeHMM`.  One can find:
+Below is some typical output from executing `travetimeHMM`.  One can find:
 
 * the maximum speed on the road network;
 * the number of trips, road links and time bins;
@@ -288,7 +287,7 @@ r <- rbind(r,
            c("`sd`", "A matrix of standard deviations estimates for the  natural logarithm of the speed (in km/h), with rows corresponding to `levels(factors)`, and columns to standard deviation estimates $\\hat{\\sigma}$ for the `nQ` states."))
 
 r <- rbind(r,
-           c("`mean`", "A matrix of mean estimates for the  natural logarithm of the speed (in km/h), with rows corresponding to `levels(factors)`, and columns to mean estimates $\\hat{\\sigma}$ for the `nQ` states."))
+           c("`mean`", "A matrix of mean estimates for the  natural logarithm of the speed (in km/h), with rows corresponding to `levels(factors)`, and columns to mean estimates $\\hat{\\sigma}$ for the `nQ` states.  Speed"))
 
 r <- rbind(r,
            c("`tau`", "A numeric variable for the standard deviation estimate $\\hat{\\tau}$ for the trip effect $\\log(E)$.  Equals $1$ if trip effect is not handled by the selected model type."))
@@ -314,14 +313,14 @@ knitr::kable(z, caption = "Table 4 - Components of the list object returned by `
 
 # Prediction
 
-Prediction is performed using Algorithm 2 from Woodard et. al. (2016). Prediction is obtained by sequential sampling on the basis of the parameter estimates supplied to the algorithm. First, given a start time, the algorithm samples initial states for the first link and time bin, a long side speed. For every subsequent link, the algorithm samples (given the previous link states) a new state, and then a new speed on the link given the state and time bin. Ultimately $n$ point predictions are returned for the travel time (in seconds) of the whole trip.
+Prediction is performed using Algorithm 2 from Woodard et. al. (2016). Prediction is obtained by sequential sampling on the basis of the parameter estimates supplied to the algorithm. First, given a start time, the algorithm samples initial states for the first link and time bin, a long side speed. For every subsequent link, samples a new state, given the previous link states, and speed on the link given the state and time bin. Travel time is then aggregated and computed deterministically. Ultimately $n$ point predictions are returned for the travel time (in seconds) of the whole trip.
 
 ## Calling `predict.traveltime`
 
 The prediction algorithm is executed by calling the `predict.traveltime` function, which has the following interface:
 
 ```{r eval=FALSE}
-predict(modelObject,
+predict(object,
         tripdata,
         starttime = Sys.time(),
         n = 1000,
@@ -337,7 +336,7 @@ Our example involves predicting the travel time for trip ID 2700 from the origin
 Link traversal order is preserved.
 single_trip <- subset(tripset, tripID==2700)
 
-pred <- predict(modelObject = fit,
+pred <- predict.traveltime(object = fit,
                            tripdata = single_trip,
                            starttime = single_trip$time[1],
                            n = 1000)
@@ -353,7 +352,7 @@ library(kableExtra)
 r <-       c("`object`", "A list object corresponding to the return value of function `traveltimeHMM`.")
 
 r <- rbind(r,
-           c("`tripdata`", "A data frame of road links with information on each link's traversal. Columns minimally include objects `linkID` and `length`, and the latter must have the same length. Rows must be in chronological order.  The program assumes that the sequence of road links forms a coherent and feasible path.  *No verification is performed to that effect.*"))
+           c("`tripdata`", "A data frame of road links with information on each link's traversal. Columns minimally includes objects `linkID` and `length`, and the latter must have the same length. Rows must be in chronological order."))
 
 r <- rbind(r,
            c("`starttime`", "The start date and time for the very first link of the trip, in `POSIXct` format. Default is the current date and time."))
@@ -362,7 +361,7 @@ r <- rbind(r,
            c("`n`", "Number of samples. Default is $1000$."))
 
 r <- rbind(r,
-           c("`logE`", "A numeric value representing the point estimate of the mean trip effect for the speed in km/h, on the log-scale.  (Hence, speeds and trip effects are to be added *on the logarithmic scale* as prescribed in Woodard et al.)  `logE` normally needs to be a numerical vector of size `n`. If a single numeric value is supplied, it will be replicated into a vector. If `logE` is `NULL` the function will use either a vector of simulated values (if the model is from the trip family), or a vector of $0$ otherwise. Default is NULL. NOTE: when simulating values for the vector, the value for $\\tau$ is taken from the model object."))
+           c("`logE`", "A numeric representing the point estimate of the mean trip effect for the speed in km/h, on the log-scale.  (Hence, speeds and trip effects are to be added *on the logarithmic scale* as prescribed in Woodard et al.)  `logE` normally needs to be a numerical vector of size `nSamples`. If a single numeric value is supplied, it will be replicated into a vector. If `logE` is `NULL` the function will use either a vector of simulated values (if the model is from the trip family), or a vector of $0$ otherwise. Default is NULL. NOTE: when simulating values for the vector, the value for $\\tau$ is taken from the model object."))
 
 z <- as.data.frame(r[,2], row.names = r[,1])
 names(z) <- ""
@@ -424,7 +423,7 @@ abline(v=sum(single_trip$traveltime), lty=2, lwd=2, col='red')
 
 To specify different time bins than the ones supplied, `traveltimeHMM` provides a functional method called `rules2timebins()` that translates human readable weekly time bins to a conversion function.
 
-`rules2timebins()` takes a list of lists of time bin rules, where each sub-list specifies 4 variables, `start` and `end` as the start and end time of a time bin in 24h format, `days` as a vector specifying the weekdays this time bin applies to, `1` for Sunday, and `2:5` for weekdays, and finally a `tag` to specify a name for the time bin.
+`rules2timebins()` takes a list of lists of time bin rules, where each sub-list specifies 4 variables, `start` and `end`as the start and end time of a time bin in 24h format, `days` as a vector specifying the weekdays this time bin applies to, `1` for Sunday, and `2:5` for weekdays, and finally a `tag` to specify a name for the time bin.
 
 For example,
 
@@ -471,7 +470,7 @@ The estimation step `traveltimeHMM` does not utilize the new functional `time_bi
 ```{r eval=FALSE}
 predict.traveltime(object, data, starttime = Sys.time(),  n=1000, time_bins.fun = time_bins, ...)
 ```
-where the argument `time_bins.fun = time_bins` is already specified to the default `time_bins()` functional. Hence, in prediction under new time bin categories, the constructed functional must be passed as `time_bins.fun`.
+where the argument `time_bins.fun = time_bins` is already specified to the default `time_bins()` functional. Hence, in prediction under a new time bin categories, the constructed functional must be passed as `time_bins.fun`.
 
 # References
 

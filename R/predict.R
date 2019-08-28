@@ -3,7 +3,7 @@
 #' 
 #' Function \code{getValidE} takes a tentative value for \code{logE} and returns a valid value for it.
 #' 
-#' The value for \code{logE} in the model object passed as parameter is *NOT* used.
+#' The value for \code{logE} in the model object passed as parameter is \emph{NOT} used.
 #' 
 #' @param object A model object (a list) provided through the execution of function \code{timetravelHMM}.
 #' @param logE Tentative values of point estimates of trip effects.
@@ -11,7 +11,7 @@
 #' 
 #' @return The function return a valid value for \code{logE}.  The value supplied as a parameter
 #'   for \code{logE} is normally a vector of numerics of size \code{n}, in which case it is
-#'   returned *as is*.  If a single numeric value is supplied instead, it will be replicated into
+#'   returned \emph{as is}.  If a single numeric value is supplied instead, it will be replicated into
 #'   a vector of the appropriate size which will be returned.  If \code{logE} is \code{NULL}
 #'   or invalid, then the function will return either a vector of simulated values
 #'   (if the model is from the \code{trip} family), or a vector of \code{0} otherwise.
@@ -48,9 +48,10 @@ getValidE <- function(object, logE, n) {
 #' Predict the travel time for a trip using a \code{traveltimeHMM} model object
 #' 
 #' \code{predict.traveltime} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object.
+#' Prediction can be performed for a single trip only.
 #' 
 #' The function begins by validating and, if required, replacing the value of the parameter \code{logE}
-#' (see explanation alongside \code{logE} in the *Arguments* section below).  It then transfers execution
+#' (see explanation alongside \code{logE} in the \emph{Arguments} section).  It then transfers execution
 #' to the appropriate function according to the selected model: \code{predict.traveltime.HMM} for
 #' models of the \code{HMM} family, or \code{predict.traveltime.no_dependence} otherwise.
 #'  
@@ -58,17 +59,22 @@ getValidE <- function(object, logE, n) {
 #'   The list includes information on model as well as estimates for its parameters.
 #'   See \code{timetravelHMM} man page.
 #' @param tripdata A data frame of road links with information on each
-#'   link's traversal.  Columns minimally includes objects 'linkID' and 'length',
+#'   link's traversal.  Columns minimally include objects 'linkID' and 'length',
 #'   and the latter must have the same length.  Rows must be in chronological order.
+#'   The program assumes that the sequence of road links forms a coherent and feasible
+#'   path.  \emph{No verification is performed to that effect}.
 #' @param starttime The start date and time for the very first link of the trip,
 #'   in POSIXct format.  Default is the current date and time.
 #' @param n Number of samples.  Default is 1000.
-#' @param logE Point estimate of trip effects.  \code{logE} normally needs to be a vector of numerics of size \code{n}.
+#' @param logE A numeric value representing the point estimate of the mean trip effect for the speed in km/h, on
+#'   the log-scale.  (Hence, speeds and trip effects are to be added \emph{on the logarithmic scale} as prescribed
+#'   in Woodard et al.).  \code{logE} normally needs to be a numerical vector of size \code{n}. 
 #'   If a single numeric value is supplied, it will be replicated into a vector.  If \code{logE} is \code{NULL}
 #'   the function will use either a vector of simulated values (if the model is from the \code{trip} family),
-#'   or a vector of \code{0} otherwise.  Default is \code{NULL}.
+#'   or a vector of \code{0} otherwise.  Default is \code{NULL}.  NOTE: when simulating values for the
+#'   vector, the value for \eqn{\tau} is taken from the model object.
 #' 
-#' @return \code{predict.traveltime} returns a vector of size \code{n} of numerics representing the point prediction of total travel time, in seconds, for each run.
+#' @return \code{predict.traveltime} returns a numerical vector of size \code{n} representing the point prediction of total travel time, in seconds, for each run.
 #' 
 #' @examples
 #' \dontrun{

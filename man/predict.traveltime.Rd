@@ -13,28 +13,34 @@ The list includes information on model as well as estimates for its parameters.
 See \code{timetravelHMM} man page.}
 
 \item{tripdata}{A data frame of road links with information on each
-link's traversal.  Columns minimally includes objects 'linkID' and 'length',
-and the latter must have the same length.  Rows must be in chronological order.}
+link's traversal.  Columns minimally include objects 'linkID' and 'length',
+and the latter must have the same length.  Rows must be in chronological order.
+The program assumes that the sequence of road links forms a coherent and feasible
+path.  \emph{No verification is performed to that effect}.}
 
 \item{starttime}{The start date and time for the very first link of the trip,
 in POSIXct format.  Default is the current date and time.}
 
 \item{n}{Number of samples.  Default is 1000.}
 
-\item{logE}{Point estimate of trip effects.  \code{logE} normally needs to be a vector of numerics of size \code{n}.
+\item{logE}{A numeric value representing the point estimate of the mean trip effect for the speed in km/h, on
+the log-scale.  (Hence, speeds and trip effects are to be added \emph{on the logarithmic scale} as prescribed
+in Woodard et al.).  \code{logE} normally needs to be a numerical vector of size \code{n}. 
 If a single numeric value is supplied, it will be replicated into a vector.  If \code{logE} is \code{NULL}
 the function will use either a vector of simulated values (if the model is from the \code{trip} family),
-or a vector of \code{0} otherwise.  Default is \code{NULL}.}
+or a vector of \code{0} otherwise.  Default is \code{NULL}.  NOTE: when simulating values for the
+vector, the value for \eqn{\tau} is taken from the model object.}
 }
 \value{
-\code{predict.traveltime} returns a vector of size \code{n} of numerics representing the point prediction of total travel time, in seconds, for each run.
+\code{predict.traveltime} returns a numerical vector of size \code{n} representing the point prediction of total travel time, in seconds, for each run.
 }
 \description{
 \code{predict.traveltime} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object.
+Prediction can be performed for a single trip only.
 }
 \details{
 The function begins by validating and, if required, replacing the value of the parameter \code{logE}
-(see explanation alongside \code{logE} in the *Arguments* section below).  It then transfers execution
+(see explanation alongside \code{logE} in the \emph{Arguments} section).  It then transfers execution
 to the appropriate function according to the selected model: \code{predict.traveltime.HMM} for
 models of the \code{HMM} family, or \code{predict.traveltime.no_dependence} otherwise.
 }
