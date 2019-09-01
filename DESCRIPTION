@@ -1,5 +1,5 @@
 Package: traveltimeHMM
-Title: Estimate and predict travel time in a road network
+Title: Estimate and predict travel time in road networks
 Version: 0.0.0.9000
 Authors@R: c(
     person(given = "Mohamad",
@@ -23,7 +23,7 @@ Authors@R: c(
            role = "ctb",
            email = "eric.germain@hec.ca")
            )
-Description: Travel time estimation and prediction from sets of speeds, road links and time periods using an hidden Markov model with trip effects.
+Description: Implements 4 models to estimate travel time distribution with different types of dependencies. A Hidden Markov Model is used to capture dependency on hidden congestion states. A trip effect is used to capture dependency on driver behaviour. Variations of those two types of dependencies leads to four models to estimate the distribution of travel time. Prediction methods for each model is provided.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true

@@ -2,47 +2,58 @@
 #' 
 #' \code{traveltimeHMM} estimates trip- and link- specific speed parameters from observed average speeds per unique trip and link.
 #'
-#' @param logspeeds A numeric vector of speed observations (in km/h) on the (natural) log-scale.
-#' @param trips An integer or character vector of trip ids for each observation of \code{speed}.
-#' @param timeBins A character vector of time bins for each observation of \code{speed}.
-#' @param linkIds A vector of link ids (route or way) for each observation of \code{speed}.
-#' @param data A data frame or equivalent object that contains one column for each of test.
+#' @param logspeeds A numeric vector of speed observations (in km/h) on the (natural) log-scale.  Needs
+#'   to be provided if \code{data} is \code{NULL}, otherwise it will be overwritten by \code{logspeeds} column in \code{data}.  Default is \code{NULL}.
+#' @param trips An integer or character vector of trip ids for each observation of \code{speed}.  Needs
+#'   to be provided if \code{data} is \code{NULL}, otherwise it will be overwritten by \code{trips} column in \code{data}. Default is \code{NULL}.
+#' @param timeBins A character vector of time bins for each observation of \code{speed}. Needs
+#'   to be provided if \code{data} is \code{NULL}, otherwise it will be overwritten by \code{timeBins} column in \code{data}. Default is \code{NULL}.
+#' @param linkIds A vector of link ids (route or way) for each observation of \code{speed}.  Needs
+#'   to be provided if \code{data} is \code{NULL}, otherwise it will be overwritten by \code{linkIds} column in \code{data}. Default is \code{NULL}.
+#' @param data A data frame or equivalent object that contains one column for each of
+#'   \code{logspeeds}, \code{trips}, \code{timeBins} and \code{linkIds}.  Default is \code{NULL}.  This
+#'   argument is mutually exclusive with the full joint set of \code{logspeeds}, \code{trips},
+#'   \code{timeBins} and \code{linkIds}. One can either pass the latter vectors explicitly or as a dataframe \code{data}.
 #' @param nQ An integer corresponding to the number of different congestion states that the traversal
-#'   of a given link can take corresponding to \code{|{1...., Q}|}, \code{default = 1}.
+#'   of a given link can take corresponding to \code{|{1...., Q}|}.  Hidden Markov models (see table 2)
+#'   require \code{nQ >= 2} whilst other models require exactly \code{nQ = 1}.  As an example,
+#'   Woodard uses \code{nQ = 1}.  Default is \code{1}.
 #' @param model Type of model as string, \code{trip-HMM} to use a hidden Markov model (HMM) with trip effect, \code{HMM} (default) is an HMM without trip effect,
 #'   \code{trip} is trip effect model without HMM, and \code{no-dependence} is model with link specific
 #'   parameter only without an HMM nor a trip effect.
-#' @param tol.err A numeric variable representing the level of tolerable distance between parameter estimates from consecutive iterations,
-#'   \code{default = 10}.
+#' @param tol.err A numeric variable representing the threshold under which the estimation algorithm will
+#'   consider it has reached acceptable estimate values.  Default is \code{10}.
 #' @param L An integer minimum number of observations per factor (\code{linkIds x timeBins}) to estimate
-#'   the parameter for, \code{default = 10}. Factors that have fewer total observations or initial state
-#'   observations than \code{L} their estimates are imputed using time bin data, without regard to road
+#'   the parameter for.  Default is \code{10}. Factors that have fewer total observations or initial state
+#'   observations than \code{L} have their estimates imputed using time bin data, without regard to road
 #'   link data.
-#' @param max.it An integer for the maximum number of iterations to run for, \code{default = 20}.
-#' @param verbose A boolean that triggers verbose output, \code{default = FALSE}.
+#' @param max.it An integer for the upper limit of the iterations to be performed by the estimation
+#'   algorithm.  Default is \code{20}.
+#' @param verbose A boolean that triggers verbose output.  Default is \code{FALSE}.
 #' @param max.speed An optional float for the maximum speed in km/h, on the linear scale
-#'   (not the log-scale, unlike for \code{logspeeds}), \code{defaut = NULL} which
-#'   in practice results in a maximum speed of 130 km/h.
+#'   (not the log-scale, unlike for \code{logspeeds}).  Default is \code{NULL} which results in a maximum speed
+#'   of 130 km/h.  If there is any occurrence of speed in excel of \code{max.speed}, then the system issues to the
+#'   user a warning that includes the percentage of such occurrences.
 #' @param seed An optional float for the seed used for the random generation of the first Markov transition matrix
-#'   and initial state vector, \code{default = NULL}.  If not provided, then those objects are generated deterministically.
+#'   and initial state vector.  Default is \code{NULL}.  If not provided, then those objects are generated deterministically.
 #'   The effect of \code{seed} is cancelled by tmat.p or init.p when provided.
-#' @param tmat.p An optional Markov transition matrix (big 'gamma'), i.e. a \code{nQ x nQ}
-#'   matrix with rows summing to \code{1}, \code{default = NULL}
-#' @param init.p An optional Markov initial state vector (small 'gamma')
-#'   of size \code{nQ} with elements summing to \code{1}, \code{default = NULL}.
-#' @param debug A boolean with value TRUE if we want debug information to be generated, \code{default = FALSE}.
+#' @param tmat.p An optional starting value for the Markov transition matrix \eqn{\Gamma} of size \code{nQ x nQ}
+#'   with rows summing to \code{1}.  Default is \code{NULL}
+#' @param init.p An optional starting value for the Markov initial state vector \eqn{\gamma}
+#'   of size \code{nQ} with elements summing to \code{1}.  Default is \code{NULL}.
+#' @param debug A boolean with value TRUE if we want debug information to be generated.  Default is \code{FALSE}.
 #' @details NULL
 #' 
 #' @return \code{traveltimeHMM} returns a list of the following parameters.
-#' \item{factors}{a factor of interactions (linkId x timeBin) with the same length of observations, and with levels corresponding to unique factors}
-#' \item{trip}{a factor of trips.}
-#' \item{tmat}{a transition matrix with rows corresponding to \code{levels(factors)}, with columns being the row-wise transition matrix of that factor. For example, \code{matrix(tmat[1,], ncol = nQ, nrow = nQ, byrow = TRUE)} is the transition matrix of \code{levels(factors)[1]}.}
-#' \item{init}{a initial state probability matrix with rows corresponding to \code{levels(factors)}, and columns to the \code{nQ} states.}
-#' \item{sd}{a matrix of standard deviations estimates with rows corresponding to \code{levels(factors)}, and columns to standard deviation estimates of the \code{nQ} states.}
-#' \item{mean}{a matrix of mean estimates with rows corresponding to \code{levels(factors)}, and columns to mean estimates for the \code{nQ} states.}
-#' \item{tau}{a numeric variable for the standard deviation estimate of the trip effect parameter \code{logE}.}
-#' \item{logE}{a numeric vector of trip effect estimates corresponding to \code{levels(trip)}.}
-#' \item{nQ}{an integer number of congestion states.}
+#' \item{factors}{a factor of interactions (linkId x timeBin) of length \code{nObs}.  Factors are in the format \code{linkId.timeBin}.}
+#' \item{trip}{a factor of trip IDs.}
+#' \item{tmat}{a transition matrix with rows corresponding to \code{levels(factors)}, and with columns being the row-wise transition matrix of that factor. For example, \code{matrix(tmat[1,], ncol = nQ, nrow = nQ, byrow = TRUE)} is the transition matrix of \code{levels(factors)[1]}.  \code{NULL} if hidden Markov modelling is not handled by the selected model type.}
+#' \item{init}{a initial state probability matrix with rows corresponding to \code{levels(factors)}, and columns to the \code{nQ} states.  \code{NULL} if hidden Markov modelling is not handled by the selected model type.}
+#' \item{sd}{a matrix of standard deviations estimates for the natural logarithm of the speed (in km/h), with rows corresponding to \code{levels(factors)}, and columns to standard deviation estimates for the \code{nQ} states.}
+#' \item{mean}{a matrix of mean estimates for the natural logarithm of the speed (in km/h), with rows corresponding to \code{levels(factors)}, and columns to mean estimates for the \code{nQ} states.}
+#' \item{tau}{a numeric variable for the standard deviation estimate for the trip effect parameter \code{logE}.   Equals \code{1} if trip effect is not handled by the selected model type.}
+#' \item{logE}{a numeric vector of trip effect estimates corresponding to \code{levels(trip)}.  Values are set to \code{0} if trip effect is not handled by the selected model type. Units are the same as for \code{logspeeds}.}
+#' \item{nQ}{an integer corresponding to the number of different congestion states, equal to the parameter nQ that was passed in the function call.}
 #' \item{nB}{an integer number of unique time bins.}
 #' \item{nObs}{an integer number of observations.}
 #' \item{model}{a character string corresponding to the type of model used.}
@@ -84,7 +95,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
     singleParamsAvailable <- !is.null(logspeeds) & !is.null(trips) & !is.null(timeBins) & !is.null(linkIds)
     
     if(!xor(frameAvailable, singleParamsAvailable))
-      stop("Either 'frame' or all of 'logspeeds', 'trips', 'timeBins' and 'linkIds' must be provided.")
+      stop("Either 'data' or all of 'logspeeds', 'trips', 'timeBins' and 'linkIds' must be provided.")
     
     if(frameAvailable) {
       logspeeds <- data$logspeed
