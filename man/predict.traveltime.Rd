@@ -23,10 +23,8 @@ in POSIXct format.  Default is the current date and time.}
 
 \item{n}{Number of samples.  Default is 1000.}
 
-\item{logE}{A numeric value representing the point estimate of the mean trip effect for the speed in km/h, on
-the log-scale.  (Hence, speeds and trip effects are to be added \emph{on the logarithmic scale} as prescribed
-in Woodard et al.).  \code{logE} normally needs to be a numerical vector of size \code{n}. 
-If a single numeric value is supplied, it will be replicated into a vector.  If \code{logE} is \code{NULL}
+\item{logE}{Point estimate of trip effects.  \code{logE} normally needs to be a numerical vector of size \code{n}.
+If a single numerical value is supplied, it will be replicated into a vector.  If \code{logE} is \code{NULL}
 the function will use either a vector of simulated values (if the model is from the \code{trip} family),
 or a vector of \code{0} otherwise.  Default is \code{NULL}.  NOTE: when simulating values for the
 vector, the value for \eqn{\tau} is taken from the model object.}

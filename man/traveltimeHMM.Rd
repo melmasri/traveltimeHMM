@@ -5,28 +5,28 @@
 \title{Estimate trip- and link- specific speed parameters from observed average speeds}
 \usage{
 traveltimeHMM(logspeeds = NULL, trips = NULL, timeBins = NULL,
-  linkIds = NULL, tripframe = NULL, nQ = 1L, model = c("HMM",
+  linkIds = NULL, data = NULL, nQ = 1L, model = c("HMM",
   "trip-HMM", "trip", "no-dependence"), tol.err = 10, L = 10L,
   max.it = 20, verbose = FALSE, max.speed = NULL, seed = NULL,
   tmat.p = NULL, init.p = NULL, debug = FALSE)
 }
 \arguments{
 \item{logspeeds}{A numeric vector of speed observations (in km/h) on the (natural) log-scale.  Needs
-to be provided if and only if \code{tripframe} is \code{NULL}.  Default is \code{NULL}.}
+to be provided if \code{data} is \code{NULL}, otherwise it will be overwritten by \code{logspeeds} column in \code{data}.  Default is \code{NULL}.}
 
 \item{trips}{An integer or character vector of trip ids for each observation of \code{speed}.  Needs
-to be provided if and only if \code{tripframe} is \code{NULL}.  Default is \code{NULL}.}
+to be provided if \code{data} is \code{NULL}, otherwise it will be overwritten by \code{trips} column in \code{data}. Default is \code{NULL}.}
 
-\item{timeBins}{A character vector of time bins for each observation of \code{speed}.  Needs
-to be provided if and only if \code{tripframe} is \code{NULL}.  Default is \code{NULL}.}
+\item{timeBins}{A character vector of time bins for each observation of \code{speed}. Needs
+to be provided if \code{data} is \code{NULL}, otherwise it will be overwritten by \code{timeBins} column in \code{data}. Default is \code{NULL}.}
 
 \item{linkIds}{A vector of link ids (route or way) for each observation of \code{speed}.  Needs
-to be provided if and only if \code{tripframe} is \code{NULL}.  Default is \code{NULL}.}
+to be provided if \code{data} is \code{NULL}, otherwise it will be overwritten by \code{linkIds} column in \code{data}. Default is \code{NULL}.}
 
-\item{tripframe}{A data frame or equivalent object that contains one column for each of
+\item{data}{A data frame or equivalent object that contains one column for each of
 \code{logspeeds}, \code{trips}, \code{timeBins} and \code{linkIds}.  Default is \code{NULL}.  This
 argument is mutually exclusive with the full joint set of \code{logspeeds}, \code{trips},
-\code{timeBins} and \code{linkIds}.}
+\code{timeBins} and \code{linkIds}. One can either pass the latter vectors explicitly or as a dataframe \code{data}.}
 
 \item{nQ}{An integer corresponding to the number of different congestion states that the traversal
 of a given link can take corresponding to \code{|{1...., Q}|}.  Hidden Markov models (see table 2)
