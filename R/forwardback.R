@@ -1,5 +1,5 @@
-#' @keywords internal
 #' Computing the posterior marginals of hidden state variables using a sequence of observations
+#' @keywords internal
 #' 
 #' \code{forwardback} implements Russell and Norvig's forward-backward algorithm that is used
 #' at step 3 of Algorithm 1 in Woodard et al.
@@ -17,8 +17,6 @@
 #' {Russell, S., Norvig, P., 2009.  Artificial Intelligence: A Modern Approach.  Pearson Education, UK.}
 #' 
 #' @export
-
-
 forwardback <- function(probTran, initQ) {
   
     # 'fwd' corresponds to the FORWARD function as defined in Eq. 15.5 of Russell and Norvig's book.
@@ -70,8 +68,8 @@ forwardback <- function(probTran, initQ) {
     if (!is.matrix(probTran)) 
         probTran = matrix(probTran, ncol = nQ^2, byrow = TRUE)
 
-    return(list(alpha = unlist(Reduce(fwd, 1:Obs, init = initQ, acc = TRUE)[-1], use.names = FALSE), 
-        beta = unlist(Reduce(bwd, 1:Obs, init = matrix(rep(1, nQ), nrow = nQ), acc = TRUE, 
+    return(list(alpha = unlist(Reduce(fwd, 1:Obs, init = initQ, accumulate = TRUE)[-1], use.names = FALSE), 
+        beta = unlist(Reduce(bwd, 1:Obs, init = matrix(rep(1, nQ), nrow = nQ), accumulate = TRUE, 
             right = TRUE)[-1], use.names = FALSE)))
 }
 

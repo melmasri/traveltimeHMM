@@ -1,0 +1,64 @@
+---
+output: github_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# traveltimeHMM
+
+`traveltimeHMM` package implements a Hidden Markov Model (HMM) with a random trip effect to estimate the distribution of travel time. The HMM is used to capture dependency on hidden congestion states. The trip effect is used to capture dependency on driver behaviour. Variations of those two types of dependencies leads to four models to estimate the distribution of travel time. Prediction methods for each model is provided.
+
+
+[Package website](https://melmasri.github.io/traveltimeHMM/)
+
+## Installation
+
+The package is still under development in the Beta stage.
+
+aInstall from [GitHub](https://github.com/melmasri/traveltimeHMM) with:
+
+```{r}
+# install.packages("devtools")
+devtools::install_github("melmasri/traveltimeHMM",  auth_token = 'get an Auth_token')
+```
+## Example
+
+This package includes a small data set (`tripset`) that aggregates map-matched anonymized mobile phone GPS data collected in Quebec city in 2014 using the Mon Trajet smartphone application developed by [Brisk Synergies Inc](https://brisksynergies.com/). The precise duration of the time period is kept confidential.
+
+View the data with:
+
+```{r}
+library(traveltimeHMM)
+data(tripset)
+head(tripset)
+```
+
+To fit a simple `HMM` model use the following code
+
+```{r}
+fit <- traveltimeHMM(data = tripset,nQ = 2,max.it = 20, model = "HMM")
+```
+
+Predict for a single with:
+
+```{r}
+single_trip <- subset(tripset, tripID==2700)
+pred <- predict(object = fit,
+               tripdata = single_trip,
+               starttime = single_trip$time[1],
+               n = 1000)
+hist(pred)
+```
+
+## Bugs
+
+This is a work in progress. For bugs and features, please refer to [here](https://github.com/melmasri/traveltimeHMM/issues).
+
+

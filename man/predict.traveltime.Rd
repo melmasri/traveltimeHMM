@@ -4,37 +4,43 @@
 \alias{predict.traveltime}
 \title{Predict the travel time for a trip using a \code{traveltimeHMM} model object}
 \usage{
-\method{predict}{traveltime}(modelObject, tripdata,
-  starttime = Sys.time(), nbRuns = 1000, logE = NULL)
+\method{predict}{traveltime}(object, tripdata, starttime = Sys.time(),
+  n = 1000, logE = NULL, ...)
 }
 \arguments{
-\item{modelObject}{A model object (a list) provided through the execution of function \code{timetravelHMM}.
+\item{object}{A model object (a list) provided through the execution of function \code{timetravelHMM}.
 The list includes information on model as well as estimates for its parameters.
 See \code{timetravelHMM} man page.}
 
 \item{tripdata}{A data frame of road links with information on each
-link's traversal.  Columns minimally includes objects 'linkID' and 'length',
-and the latter must have the same length.  Rows must be in chronological order.}
+link's traversal.  Columns minimally include objects 'linkID' and 'length',
+and the latter must have the same length.  Rows must be in chronological order.
+The program assumes that the sequence of road links forms a coherent and feasible
+path.  \emph{No verification is performed to that effect}.}
 
 \item{starttime}{The start date and time for the very first link of the trip,
 in POSIXct format.  Default is the current date and time.}
 
-\item{nbRuns}{Number of simulation runs.  Default is 1000.}
+\item{n}{Number of samples.  Default is 1000.}
 
-\item{logE}{Point estimate of trip effects.  \code{logE} normally needs to be a vector of numerics of size \code{nbRuns}.
-If a single numeric value is supplied, it will be replicated into a vector.  If \code{logE} is \code{NULL}
+\item{logE}{Point estimate of trip effects.  \code{logE} normally needs to be a numerical vector of size \code{n}.
+If a single numerical value is supplied, it will be replicated into a vector.  If \code{logE} is \code{NULL}
 the function will use either a vector of simulated values (if the model is from the \code{trip} family),
-or a vector of \code{0} otherwise.  Default is \code{NULL}.}
+or a vector of \code{0} otherwise.  Default is \code{NULL}.  NOTE: when simulating values for the
+vector, the value for \eqn{\tau} is taken from the model object.}
+
+\item{...}{not used.}
 }
 \value{
-\code{predict.traveltime} returns a vector of size \code{nbRuns} of numerics representing the point prediction of total travel time, in seconds, for each run.
+\code{predict.traveltime} returns a numerical vector of size \code{n} representing the point prediction of total travel time, in seconds, for each run.
 }
 \description{
 \code{predict.traveltime} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object.
+Prediction can be performed for a single trip only.
 }
 \details{
 The function begins by validating and, if required, replacing the value of the parameter \code{logE}
-(see explanation alongside \code{logE} in the *Arguments* section below).  It then transfers execution
+(see explanation alongside \code{logE} in the \emph{Arguments} section).  It then transfers execution
 to the appropriate function according to the selected model: \code{predict.traveltime.HMM} for
 models of the \code{HMM} family, or \code{predict.traveltime.no_dependence} otherwise.
 }
@@ -43,7 +49,8 @@ models of the \code{HMM} family, or \code{predict.traveltime.no_dependence} othe
 data(tripset)
 
 # Fit a model - use ?traveltimeHMM for details
-fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, tripset$linkID, nQ = 2, max.it = 2)
+fit <- traveltimeHMM(tripset$logspeed, tripset$tripID,
+                     tripset$timeBin, tripset$linkID, nQ = 2, max.it = 10)
 
 # Perform a prediction for trip #2700 using the fitted model.
 single_trip <- subset(tripset, tripID==2700)
@@ -58,7 +65,6 @@ sum(single_trip$traveltime)    # observed travel time
 ?traveltimeHMM      # for help on traveltimeHMM, the estimation function
 ?predict.traveltime # for help on predict.traveltime, the prediction function
 }
-
 }
 \references{
 {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}

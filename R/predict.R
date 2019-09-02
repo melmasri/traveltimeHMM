@@ -1,56 +1,10 @@
-#' @keywords internal
-#' Get an appropriate value for \code{logE}
-#' 
-#' Function \code{getValidE} takes a tentative value for \code{logE} and returns a valid value for it.
-#' 
-#' The value for \code{logE} in the model object passed as parameter is *NOT* used.
-#' 
-#' @param object A model object (a list) provided through the execution of function \code{timetravelHMM}.
-#' @param logE Tentative values of point estimates of trip effects.
-#' @param n Number of samples. Default is 1000.
-#' 
-#' @return The function return a valid value for \code{logE}.  The value supplied as a parameter
-#'   for \code{logE} is normally a vector of numerics of size \code{n}, in which case it is
-#'   returned *as is*.  If a single numeric value is supplied instead, it will be replicated into
-#'   a vector of the appropriate size which will be returned.  If \code{logE} is \code{NULL}
-#'   or invalid, then the function will return either a vector of simulated values
-#'   (if the model is from the \code{trip} family), or a vector of \code{0} otherwise.
-#' @export
-getValidE <- function(object, logE, n) {
-  # Part 1 of validation.  We check for the existence of a valid parameter logE
-  # of size either 1 or n
-  if(!is.null(logE)) { # If a numeric parameter exists only...
-    
-    # If parameter is a single numeric, convert to vector of size n
-    if(is.numeric(logE) && length(logE) == 1)
-      logE <- rep(logE, n)
-    
-    # If we don't end up with a vector of size n, send warning message.
-    if(!is.numeric(logE) || length(logE) != n) {
-      message("Values in parameter logE need to be a vector of length 'n'.  Values for logE are discarded.")
-      logE <- NULL
-    }
-  }
-  # At this point, logE has the appropriate value among valid parameters passed,
-  # and NULL if no such value is found.
-  
-  # Part 2 of validation: if logE is null...
-  
-  if(is.null(logE)) {
-    if(grepl('trip', object$model)) 
-      logE = rnorm(n, mean = 0, sd = object$tau) # ... we define a vector of random values if trip model...
-    else logE = rep(0, n) # ... otherwise we set to vector of zeros.
-  }
-  logE # We return the result.
-  # How do we handle tau if logE is set to 0?  Currently it keeps its value.  ÉG 2019/07/25
-}
-
 #' Predict the travel time for a trip using a \code{traveltimeHMM} model object
 #' 
 #' \code{predict.traveltime} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object.
+#' Prediction can be performed for a single trip only.
 #' 
 #' The function begins by validating and, if required, replacing the value of the parameter \code{logE}
-#' (see explanation alongside \code{logE} in the *Arguments* section below).  It then transfers execution
+#' (see explanation alongside \code{logE} in the \emph{Arguments} section).  It then transfers execution
 #' to the appropriate function according to the selected model: \code{predict.traveltime.HMM} for
 #' models of the \code{HMM} family, or \code{predict.traveltime.no_dependence} otherwise.
 #'  
@@ -58,24 +12,29 @@ getValidE <- function(object, logE, n) {
 #'   The list includes information on model as well as estimates for its parameters.
 #'   See \code{timetravelHMM} man page.
 #' @param tripdata A data frame of road links with information on each
-#'   link's traversal.  Columns minimally includes objects 'linkID' and 'length',
+#'   link's traversal.  Columns minimally include objects 'linkID' and 'length',
 #'   and the latter must have the same length.  Rows must be in chronological order.
+#'   The program assumes that the sequence of road links forms a coherent and feasible
+#'   path.  \emph{No verification is performed to that effect}.
 #' @param starttime The start date and time for the very first link of the trip,
 #'   in POSIXct format.  Default is the current date and time.
 #' @param n Number of samples.  Default is 1000.
-#' @param logE Point estimate of trip effects.  \code{logE} normally needs to be a vector of numerics of size \code{n}.
-#'   If a single numeric value is supplied, it will be replicated into a vector.  If \code{logE} is \code{NULL}
+#' @param logE Point estimate of trip effects.  \code{logE} normally needs to be a numerical vector of size \code{n}.
+#'   If a single numerical value is supplied, it will be replicated into a vector.  If \code{logE} is \code{NULL}
 #'   the function will use either a vector of simulated values (if the model is from the \code{trip} family),
-#'   or a vector of \code{0} otherwise.  Default is \code{NULL}.
-#' 
-#' @return \code{predict.traveltime} returns a vector of size \code{n} of numerics representing the point prediction of total travel time, in seconds, for each run.
-#' 
+#'   or a vector of \code{0} otherwise.  Default is \code{NULL}.  NOTE: when simulating values for the
+#'   vector, the value for \eqn{\tau} is taken from the model object.
+#' @param ... not used.
+#'
+#' @return \code{predict.traveltime} returns a numerical vector of size \code{n} representing the point prediction of total travel time, in seconds, for each run.
+#'
 #' @examples
 #' \dontrun{
 #' data(tripset)
 #' 
 #' # Fit a model - use ?traveltimeHMM for details
-#' fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, tripset$linkID, nQ = 2, max.it = 2)
+#' fit <- traveltimeHMM(tripset$logspeed, tripset$tripID,
+#'                      tripset$timeBin, tripset$linkID, nQ = 2, max.it = 10)
 #' 
 #' # Perform a prediction for trip #2700 using the fitted model.
 #' single_trip <- subset(tripset, tripID==2700)
@@ -90,11 +49,10 @@ getValidE <- function(object, logE, n) {
 #' ?traveltimeHMM      # for help on traveltimeHMM, the estimation function
 #' ?predict.traveltime # for help on predict.traveltime, the prediction function
 #' }
-#' 
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-predict.traveltime<-function(object, tripdata, starttime = Sys.time(),  n = 1000, logE = NULL){
+predict.traveltime<-function(object, tripdata, starttime = Sys.time(),  n = 1000, logE = NULL, ... ){
   
     # We first perform basic checks.  'tripdata' must be a list, data frame or data table
     # that minimally includes objects 'linkID' and 'length', the latter having
@@ -115,8 +73,8 @@ predict.traveltime<-function(object, tripdata, starttime = Sys.time(),  n = 1000
       predict.traveltime.no_dependence(object, tripdata , starttime, n, logE)
 }
 
-#' @keywords internal
 #' Predict the travel time for a trip using a \code{traveltimeHMM} model object that is not of the HMM family
+#' @keywords internal
 #' 
 #' \code{predict.traveltime.no_dependence} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object that is not of the \code{HMM} family (see man page for \code{predict.traveltime}).
 #' 
@@ -132,15 +90,16 @@ predict.traveltime<-function(object, tripdata, starttime = Sys.time(),  n = 1000
 #'   and the latter must have the same length.  Rows must be in chronological order.
 #' @param starttime The start date and time for the very first link of the trip, in POSIXct format.
 #' @param n Number of samples. Default is 1000.
-#' @param logE Point estimate of trip effects, in the form of a vector of numerics of size \code{n}.
+#' @param logE Point estimate of trip effects, in the form of a numerical vector of size \code{n}.
+#' @param ... not used.
 #' 
-#' @return \code{predict.traveltime.no_dependence} returns a vector of size \code{n} of numerics representing the point prediction of total travel time, in seconds, for each run.
+#' @return \code{predict.traveltime.no_dependence} returns a vector of size \code{n} of representing the point prediction of total travel time, in seconds, for each run.
 #' 
-#' 
+#' @importFrom stats rnorm runif
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-predict.traveltime.no_dependence <- function(object, tripdata, starttime, n = 1000, logE = NULL) {
+predict.traveltime.no_dependence <- function(object, tripdata, starttime, n = 1000, logE = NULL, ...) {
     linkIds = tripdata$linkID # Contains IDs of all links for a given trip
     len = tripdata$length # Contains the length (in km) of each link in 'linkIds'
     logE <- getValidE(object, logE, n) # Get a valid vector for 'logE'; see comments in function for details.
@@ -178,8 +137,9 @@ predict.traveltime.no_dependence <- function(object, tripdata, starttime, n = 10
     tt
 }
 
-#' @keywords internal
+
 #' Predict the travel time for a trip using a \code{traveltimeHMM} model object of the HMM family
+#' @keywords internal
 #' 
 #' \code{predict.traveltime.HMM} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object of the \code{HMM} family (see man page for \code{predict.traveltime}).
 #' 
@@ -195,15 +155,16 @@ predict.traveltime.no_dependence <- function(object, tripdata, starttime, n = 10
 #'   and the latter must have the same length.  Rows must be in chronological order.
 #' @param starttime The start date and time for the very first link of the trip, in POSIXct format.
 #' @param n Number of samples. Default is 1000.
-#' @param logE Point estimate of trip effects, in the form of a vector of numerics of size \code{n}.
+#' @param logE Point estimate of trip effects, in the form of a numerical vector of size \code{n}.
+#' @param ... not used.
 #' 
-#' @return \code{predict.traveltime.HMM} returns a vector of size \code{n} of numerics representing the point prediction of total travel time, in seconds, for each run.
+#' @return \code{predict.traveltime.HMM} returns a vector of size \code{n} of representing the point prediction of total travel time, in seconds, for each run.
 #' 
-#' 
+#' @importFrom stats rnorm runif
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-predict.traveltime.HMM <- function(object, tripdata, starttime, n, logE) {
+predict.traveltime.HMM <- function(object, tripdata, starttime, n, logE, ...) {
     linkIds = tripdata$linkID # Contains IDs of all links for a given trip
     len = tripdata$length # Contains the length (in km) of each link in 'linkIds'
     logE <- getValidE(object, logE, n) # Get a valid vector for 'logE'; see comments in function for details.
@@ -254,7 +215,7 @@ predict.traveltime.HMM <- function(object, tripdata, starttime, n, logE) {
             ## obs it takes about an extra 11sec if at the top of the loop
             
             # When there's more than 1 id,
-            # aren't we mixing data from different factors???  ÉG 2019/06/19
+            # aren't we mixing data from different factors???  EG 2019/06/19
             tmat2 = matrix(c(t(object$tmat[id, ])), ncol = nQ, byrow = TRUE)
             ## tmat2 is an nQ x length(id)
             ## the first two rows are the transition of levels(fact)[1], the seond 2 rows are the transitions of levels(fact)[2], and so on.

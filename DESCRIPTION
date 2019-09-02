@@ -1,6 +1,6 @@
 Package: traveltimeHMM
-Title: Estimate and predict travel time in a road network
-Version: 0.0.0.9000
+Title: Estimate and predict travel time on road networks
+Version: 0.900
 Authors@R: c(
     person(given = "Mohamad",
            family = "Elmasri",
@@ -8,22 +8,21 @@ Authors@R: c(
            email = "elmasri.m@gmail.com"),
     person(given = "Aurelie",
            family = "Labbe",
-           role = "aut",
-           email = "aurelie.labbe@hec.ca"),
+           role = "edt"),
     person(given = "Denis",
            family = "Larocque",
-           role = "aut",
-           email = "denis.larocque@hec.ca"),
+           role = "edt"),
     person(given = "Laurent",
            family = "Charlin",
-           role = "aut",
-           email = "laurent.charlin@hec.ca"),
+           role = "edt"),
     person(given = "Eric",
            family = "Germain",
-           role = "ctb",
-           email = "eric.germain@hec.ca")
+           role = "ctb")
            )
-Description: Travel time estimation and prediction from sets of speeds, road links and time periods using an hidden Markov model with trip effects.
+Description: Implements a Hidden Markov Model (HMM) with a random trip effect to estimate the distribution of travel time. The HMM is used to capture dependency on hidden congestion states. The trip effect is used to capture dependency on driver behaviour. Variations of those two types of dependencies leads to four models to estimate the distribution of travel time. Prediction methods for each model is provided.
+Maintainer: Mohamad Elmasri <elmasri.m@gmail.com>
+URL: https://github.com/melmasri/traveltimeHMM
+BugReports: https://github.com/melmasri/traveltimeHMM/issues
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
@@ -31,5 +30,15 @@ RoxygenNote: 6.1.1
 Suggests:
     testthat,
     knitr,
-    rmarkdown
+    rmarkdown,
+    stats,
+    graphics,
+    grDevices,
+    utils,
+    datasets,
+    methods,
+    base,
+    kableExtra
 VignetteBuilder: knitr
+Depends: R (>= 2.10)
+
