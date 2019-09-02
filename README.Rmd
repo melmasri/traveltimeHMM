@@ -24,7 +24,7 @@ The package is still under development in the Beta stage.
 
 aInstall from [GitHub](https://github.com/melmasri/traveltimeHMM) with:
 
-```{r}
+```{r eval=FALSE}
 # install.packages("devtools")
 devtools::install_github("melmasri/traveltimeHMM")
 ```
@@ -42,13 +42,13 @@ head(tripset)
 
 To fit a simple `HMM` model use the following code
 
-```{r}
+```{r eval=FALSE}
 fit <- traveltimeHMM(data = tripset,nQ = 2,max.it = 20, model = "HMM")
 ```
 
 Predict for a single with:
 
-```{r}
+```{r eval=FALSE}
 single_trip <- subset(tripset, tripID==2700)
 pred <- predict(object = fit,
                tripdata = single_trip,

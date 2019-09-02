@@ -20,33 +20,6 @@ aInstall from [GitHub](https://github.com/melmasri/traveltimeHMM) with:
 ``` r
 # install.packages("devtools")
 devtools::install_github("melmasri/traveltimeHMM")
-#> Downloading GitHub repo melmasri/traveltimeHMM@master
-#>   
-   checking for file ‘/tmp/RtmpTtyyrN/remotes19b05d3f96c6/melmasri-traveltimeHMM-0a3b67e/DESCRIPTION’ ...
-  
-✔  checking for file ‘/tmp/RtmpTtyyrN/remotes19b05d3f96c6/melmasri-traveltimeHMM-0a3b67e/DESCRIPTION’
-#> 
-  
-─  preparing ‘traveltimeHMM’:
-#>    checking DESCRIPTION meta-information ...
-  
-✔  checking DESCRIPTION meta-information
-#> 
-  
-─  checking for LF line-endings in source and make files and shell scripts
-#> 
-  
-─  checking for empty or unneeded directories
-#> ─  looking to see if a ‘data/datalist’ file should be added
-#> 
-  
-─  building ‘traveltimeHMM_0.900.tar.gz’ (827ms)
-#> 
-  
-   
-#> 
-#> Installing package into '/tmp/RtmpTtyyrN/temp_libpath19b04e27ffb'
-#> (as 'lib' is unspecified)
 ```
 
 ## Example
@@ -76,10 +49,6 @@ To fit a simple `HMM` model use the following code
 
 ``` r
 fit <- traveltimeHMM(data = tripset,nQ = 2,max.it = 20, model = "HMM")
-#> max.speed is not specified, setting at default value: 130 km/h
-#> Model HMM with 4914 trips over 13235 roads and 5 time bins...
-#> Expected completion of 20 iterations in 122 secs
-#> Reached maximum number of iterations
 ```
 
 Predict for a single with:
@@ -92,8 +61,6 @@ pred <- predict(object = fit,
                n = 1000)
 hist(pred)
 ```
-
-<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />
 
 ## Bugs
 
