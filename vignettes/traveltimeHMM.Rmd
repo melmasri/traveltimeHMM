@@ -315,9 +315,9 @@ knitr::kable(z, caption = "Table 4 - Components of the list object returned by `
 
 Prediction is performed using Algorithm 2 from Woodard et. al. (2016). Prediction is obtained by sequential sampling on the basis of the parameter estimates supplied to the algorithm. First, given a start time, the algorithm samples initial states for the first link and time bin, a long side speed. For every subsequent link, samples a new state, given the previous link states, and speed on the link given the state and time bin. Travel time is then aggregated and computed deterministically. Ultimately $n$ point predictions are returned for the travel time (in seconds) of the whole trip.
 
-## Calling `predict.traveltime`
+## Calling `predict.traveltime` or `predict`
 
-The prediction algorithm is executed by calling the `predict.traveltime` function, which has the following interface:
+The prediction algorithm is executed by calling the `predict.traveltime`, or equivalently the `S3` method `predict`, which has the following interface:
 
 ```{r eval=FALSE}
 predict(object,
@@ -465,10 +465,10 @@ head(tripset)
 
 ## Prediction with new time bins
 
-The estimation step `traveltimeHMM` does not utilize the new functional `time_bins()`, however in the prediction stage, `predict.traveltime` requires input of the proper time bin functional. This can be seen by the arguments of `predict.traveltime` as
+The estimation step `traveltimeHMM` does not utilize the new functional `time_bins()`, however in the prediction stage, `predict` requires input of the proper time bin functional. This can be seen by the arguments of `predict` as
 
 ```{r eval=FALSE}
-predict.traveltime(object, data, starttime = Sys.time(),  n=1000, time_bins.fun = time_bins, ...)
+predict(object, data, starttime = Sys.time(),  n=1000, time_bins.fun = time_bins, ...)
 ```
 where the argument `time_bins.fun = time_bins` is already specified to the default `time_bins()` functional. Hence, in prediction under a new time bin categories, the constructed functional must be passed as `time_bins.fun`.
 

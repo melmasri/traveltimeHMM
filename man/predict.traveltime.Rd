@@ -5,7 +5,7 @@
 \title{Predict the travel time for a trip using a \code{traveltimeHMM} model object}
 \usage{
 \method{predict}{traveltime}(object, tripdata, starttime = Sys.time(),
-  n = 1000, logE = NULL)
+  n = 1000, logE = NULL, ...)
 }
 \arguments{
 \item{object}{A model object (a list) provided through the execution of function \code{timetravelHMM}.
@@ -28,6 +28,8 @@ If a single numerical value is supplied, it will be replicated into a vector.  I
 the function will use either a vector of simulated values (if the model is from the \code{trip} family),
 or a vector of \code{0} otherwise.  Default is \code{NULL}.  NOTE: when simulating values for the
 vector, the value for \eqn{\tau} is taken from the model object.}
+
+\item{...}{not used.}
 }
 \value{
 \code{predict.traveltime} returns a numerical vector of size \code{n} representing the point prediction of total travel time, in seconds, for each run.
@@ -47,7 +49,8 @@ models of the \code{HMM} family, or \code{predict.traveltime.no_dependence} othe
 data(tripset)
 
 # Fit a model - use ?traveltimeHMM for details
-fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, tripset$linkID, nQ = 2, max.it = 2)
+fit <- traveltimeHMM(tripset$logspeed, tripset$tripID,
+                     tripset$timeBin, tripset$linkID, nQ = 2, max.it = 10)
 
 # Perform a prediction for trip #2700 using the fitted model.
 single_trip <- subset(tripset, tripID==2700)
@@ -62,7 +65,6 @@ sum(single_trip$traveltime)    # observed travel time
 ?traveltimeHMM      # for help on traveltimeHMM, the estimation function
 ?predict.traveltime # for help on predict.traveltime, the prediction function
 }
-
 }
 \references{
 {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}

@@ -1,5 +1,5 @@
-#' @keywords internal
 #' Calculate the parameters of Gaussian speeds
+#' @keywords internal
 #' 
 #' \code{gaussian_param_by_factor} calculates the mean and variance of Gaussian speeds.  The function refers to the calculation
 #' of \eqn{\mu} and \eqn{\sigma^{2}} at step 4 of Algorithm 1 in Woodard et al., 2017
@@ -15,7 +15,6 @@
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-
 gaussian_param_by_factor <- function(logspeeds, byFactor, states = NULL) {
     if (is.null(states)) { # If 'states' is not provided, we assume a single state '1' and proceed.
         nQ = 1

@@ -1,3 +1,12 @@
+#' Converts a list time bins rules to a table of rules for each day of the week
+#' @keywords internal
+#' 
+#' \code{to7daybins} created a table of 7 rows, with rules per day.
+#' 
+#' @param rules ...
+#' @details ...
+#' @return ...
+#' @export
 to7daybins <-function(rules){
     if(typeof(rules[[1]])=='list' ){
         wdayrules = lapply(0:6,function(d)
@@ -15,6 +24,27 @@ to7daybins <-function(rules){
     return(wdayrules)
 }
 
+
+#' Converts a list of human readable rules to a functional that maps any datetime stamp to a time bin.
+#' @keywords internal
+#' 
+#' \code{rules2timebins} converts a list of human readable rules to a functional that maps any datetime stamp to a time bin.
+#' 
+#' @param rules A list of lists of rules, each sublist must contain 4 variables, \code{start} and \code{end} as the start and end times (24h) format of the time bin,
+#' \code{days} as a vector of days to apply this time bin to (1 for Sunday, ..., 7 for Saturday), and \code{tag} the name of the time bin.
+#'
+#' @details Unassigned time is by default tagged with \code{Other}
+#' @return a function that maps any datetime stamp to the associated time bins. 
+#' 
+#' @examples
+#' \dontrun{
+#' rules = list(
+#'     list(start='6:30',  end= '9:00',  days = 1:5, tag='MR'),
+#'     list(start='15:00', end= '18:00', days = 2:5, tag='ER')
+#' )
+#' time_bins <- rules2timebins(rules)
+#' time_bins(Sys.time())
+#' }
 #' @export
 rules2timebins<-function(rules){
     time2min <- function(t){
@@ -67,6 +97,17 @@ rules2timebins<-function(rules){
     return(time_bins)
 }
 
+
+#' Transforms a list of rules to a functional
+#' @keywords internal
+#' 
+#' \code{time_bins_functional} transforms a human readable function of time bin rules to a mapping functional for performance
+#' 
+#' @param rules ...
+#'
+#' @details ...
+#' @return ...
+#' 
 #' @export
 time_bins_functional<-function(time_bin_readable_function = time_bins_readable , period = c('hours', 'minutes')){
     ## A functional function that constructs a list with bin names for each hour of
@@ -106,6 +147,19 @@ time_bins_functional<-function(time_bin_readable_function = time_bins_readable ,
     }
 }
 
+#' A simple example of time bins function that is human readable.
+#' @keywords internal
+#' 
+#' \code{time_bins_readable} converts a datetime stamp to a time bin tag
+#' 
+#' @param t A datetime stamp.
+#'
+#' @details  ...
+#' @return a string representing time bin out of \code{MorningRush}, \code{EveningRush}, \code{EveningNight}, \code{Weekendday}, \code{Weekday}.
+#' 
+#' @examples
+#' time_bins_readable(Sys.time())
+#' @export
 time_bins_readable <- function(t){
     # A humanly readable function that returns bins of time
     day = as.POSIXlt(t)$wday # Get day of week: from Sunday (0) to Saturday (6)

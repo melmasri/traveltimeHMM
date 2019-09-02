@@ -41,7 +41,6 @@
 #'   with rows summing to \code{1}.  Default is \code{NULL}
 #' @param init.p An optional starting value for the Markov initial state vector \eqn{\gamma}
 #'   of size \code{nQ} with elements summing to \code{1}.  Default is \code{NULL}.
-#' @param debug A boolean with value TRUE if we want debug information to be generated.  Default is \code{FALSE}.
 #' @details NULL
 #' 
 #' @return \code{traveltimeHMM} returns a list of the following parameters.
@@ -63,7 +62,8 @@
 #' data(tripset)
 #' 
 #' # Fit an HMM model with 2 hidden congestion states and 20 algorithm iterations
-#' fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, tripset$linkID, nQ = 2, max.it = 20)
+#' fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, 
+#'                       tripset$linkID, nQ = 2, max.it = 20)
 #'
 #' # Perform prediction - use ?predict.traveltime for details
 #' single_trip <- subset(tripset, tripID==2700)
@@ -79,13 +79,13 @@
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #'
-
+#' @importFrom stats dnorm rnorm
 #' @export
 traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkIds = NULL, data = NULL,
                           nQ = 1L, model = c("HMM", "trip-HMM","trip","no-dependence"),
-                          tol.err = 10, L = 10L, max.it = 20, verbose = FALSE,
+                          tol.err = 10, L = 10L, max.it = 20L, verbose = FALSE,
                           max.speed = NULL, seed = NULL, tmat.p = NULL,
-                          init.p = NULL, debug = FALSE) {
+                          init.p = NULL) {
 
     # SECTION A - Parameter validation and related processing
   
@@ -114,7 +114,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
     # A.2 Parameter 'model'
     # Get model from "HMM", "trip-HMM","trip" or "no-dependence"; stop if invalid
     model <- tryCatch(match.arg(model),error=function(cond){
-      stop("Parameter 'model' should be one of “HMM”, “trip-HMM”, “trip”, “no-dependence”")
+      stop("Parameter 'model' should be one of HMM, trip-HMM, trip, or no-dependence")
     })
 
     # Output chosen model
@@ -168,8 +168,8 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
     # timeFactor = interaction(timeBins, lex.order = TRUE) # Replaced by next line
     timeFactor = factor(timeBins)
     linkTimeFactor = interaction(linkIds, timeBins, lex.order = TRUE)  # factor of link id and time bin, using lexicographic order.
-    obsId = as.numeric(linkTimeFactor) # CAUTION with that approach.  ÉG 2019/05/30
-    tripId = as.numeric(trips) # CAUTION with that approach.  ÉG 2019/05/30
+    obsId = as.numeric(linkTimeFactor) # CAUTION with that approach.  EG 2019/05/30
+    tripId = as.numeric(trips) # CAUTION with that approach.  EG 2019/05/30
 
     # Preparation of imputation variables - refers to eq. (6) in Woodard et al.
     # We need to handle the following three cases:
@@ -268,7 +268,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
     ###
     # Beginning implementation of Algorithm 1 (which we call Algo1 hereafter) in Woodard et al.
     #
-    ## Initialize variables - TO DOCUMENT FURTHER - ÉG 2019/06/03
+    ## Initialize variables - TO DOCUMENT FURTHER - EG 2019/06/03
     iter = 0  # t = 0 in step 1 of Algo1
 
     initNew <- tmatNew <- mu_speedNew <- var_speedNew <- probStates <- NULL
@@ -283,11 +283,6 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
     # Message to user:
     message('Model ', model, ' with ', nTrips, ' trips over ',
             nlinks, ' roads and ', nB, ' time bins...')
-    
-    if(debug) {
-      sink("debug.txt")
-      sortie.t <- sortie.err <- sortie.err.mu <- sortie.err.var <- numeric(max.it)
-    }
     
     repeat { # beginning of while loop at step 2 of Algo1
         if (grepl("HMM", model)) { # execute this block only if model is "HMM" or "trip-HMM"
@@ -358,7 +353,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
         
         # We enforce Woodard et al.'s restriction mu_j,b,q-1 <= mu_j,b,q (p. 34) by
         # swapping the mu_s (and sigma2_s as well) of each and every observation if required.
-        # TO DO: Discuss the relevance of such an approach for enforcing the restriction.  ÉG 2019/06/14
+        # TO DO: Discuss the relevance of such an approach for enforcing the restriction.  EG 2019/06/14
         mu_speedNew = meanSig$mean
         var_speedNew = meanSig$sigma2
         # ord = order_states(meanSig$mean)
@@ -369,7 +364,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
         #         ord$order[r, ]], USE.NAMES = FALSE))
         # }
         
-        # Calculating E-effect (trip specific effect parameters) --> check later by executing a trip model.  ÉG 2019/06/14
+        # Calculating E-effect (trip specific effect parameters) --> check later by executing a trip model.  EG 2019/06/14
         if(grepl('trip', model)){
             ## Calculating E-trip variance - last equation of step 4 of Algo1
             tau2 <- .colSums(logE^2, m = nTrips, n=1)/nTrips
@@ -388,7 +383,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
         # This will serve to compute iter_error for the purpose of exiting (or not) the loop.
         # In this version we bundle into Thetas objects of all kinds: mu_s, sigma^2_s, small_gammas, big_gammas, logE.
         # Each object has equal weight for the purpose of computing iter_error.  Isn't the result meaningless
-        # from an optimization point of view.  TO DO: investigate.  ÉG 2019/06/14
+        # from an optimization point of view.  TO DO: investigate.  EG 2019/06/14
         A = c(mu_speed[-linksLessMinObs,], var_speed[-linksLessMinObs,])
         B = c(mu_speedNew[-linksLessMinObs,], var_speedNew[-linksLessMinObs,])
         if(grepl('HMM', model)){
@@ -398,16 +393,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
         if(grepl('trip',model)) { A = c(A, logE); B = c(B,logE_new)}
         iter_error = error.fun(A, B)
         
-        if(debug) {
-          sortie.t[iter+1] <- iter+1
-          sortie.err[iter+1] <- iter_error
-          sortie.err.mu[iter+1] <- error.fun( mu_speed[-linksLessMinObs,], mu_speedNew[-linksLessMinObs,])
-          sortie.err.var[iter+1] <- error.fun(var_speed[-linksLessMinObs,],var_speedNew[-linksLessMinObs,])
-          print(paste("t =",iter+1,"; iter_error = ", iter_error,
-                      "; dmu = ",  sortie.err.mu[iter+1],
-                      "; dvar = ", sortie.err.var[iter+1]))
-        }
-        
+
         # We re-position all parameters and increment the counter.
         tmat <- tmatNew
         init <- initNew
@@ -446,12 +432,6 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
         }
     }
     
-    if(debug) {
-      sortie <- data.frame(sortie.t, sortie.err, sortie.err.mu, sortie.err.var, stringsAsFactors = FALSE)
-      write.csv(sortie, file="debug.csv")
-      sink()
-    }
-    
     ## returning variables
     obj <- list(factors = linkTimeFactor,
                 trip = trips,
@@ -465,7 +445,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
                 nB = nB,
                 nObs = nObs,
                 model = model)
-    class(obj) <- append(class(obj),"traveltime")
+    class(obj) <- append(class(obj),"traveltime", after=0)
     invisible(obj)
 }
 

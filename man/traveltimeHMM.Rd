@@ -7,8 +7,8 @@
 traveltimeHMM(logspeeds = NULL, trips = NULL, timeBins = NULL,
   linkIds = NULL, data = NULL, nQ = 1L, model = c("HMM",
   "trip-HMM", "trip", "no-dependence"), tol.err = 10, L = 10L,
-  max.it = 20, verbose = FALSE, max.speed = NULL, seed = NULL,
-  tmat.p = NULL, init.p = NULL, debug = FALSE)
+  max.it = 20L, verbose = FALSE, max.speed = NULL, seed = NULL,
+  tmat.p = NULL, init.p = NULL)
 }
 \arguments{
 \item{logspeeds}{A numeric vector of speed observations (in km/h) on the (natural) log-scale.  Needs
@@ -64,8 +64,6 @@ with rows summing to \code{1}.  Default is \code{NULL}}
 
 \item{init.p}{An optional starting value for the Markov initial state vector \eqn{\gamma}
 of size \code{nQ} with elements summing to \code{1}.  Default is \code{NULL}.}
-
-\item{debug}{A boolean with value TRUE if we want debug information to be generated.  Default is \code{FALSE}.}
 }
 \value{
 \code{traveltimeHMM} returns a list of the following parameters.
@@ -90,7 +88,8 @@ of size \code{nQ} with elements summing to \code{1}.  Default is \code{NULL}.}
 data(tripset)
 
 # Fit an HMM model with 2 hidden congestion states and 20 algorithm iterations
-fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, tripset$linkID, nQ = 2, max.it = 20)
+fit <- traveltimeHMM(tripset$logspeed, tripset$tripID, tripset$timeBin, 
+                      tripset$linkID, nQ = 2, max.it = 20)
 
 # Perform prediction - use ?predict.traveltime for details
 single_trip <- subset(tripset, tripID==2700)
