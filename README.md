@@ -15,7 +15,7 @@ provided.
 
 The package is still under development in the Beta stage.
 
-aInstall from [GitHub](https://github.com/melmasri/traveltimeHMM) with:
+Install from [GitHub](https://github.com/melmasri/traveltimeHMM) with:
 
 ``` r
 # install.packages("devtools")
