@@ -26,7 +26,7 @@ aInstall from [GitHub](https://github.com/melmasri/traveltimeHMM) with:
 
 ```{r}
 # install.packages("devtools")
-devtools::install_github("melmasri/traveltimeHMM",  auth_token = 'get an Auth_token')
+devtools::install_github("melmasri/traveltimeHMM")
 ```
 ## Example
 
