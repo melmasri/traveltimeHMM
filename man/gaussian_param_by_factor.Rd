@@ -21,9 +21,6 @@ for each level and state.  The second list \code{sigma2} contains the vector of 
 \description{
 Calculate the parameters of Gaussian speeds
 }
-\references{
-{Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
-}
 \keyword{1}
 \keyword{2017}
 \keyword{4}
@@ -32,8 +29,6 @@ Calculate the parameters of Gaussian speeds
 \keyword{The}
 \keyword{Woodard}
 \keyword{\code{gaussian_param_by_factor}}
-\keyword{\eqn{\mu}}
-\keyword{\eqn{\sigma^{2}}}
 \keyword{al.,}
 \keyword{and}
 \keyword{at}
@@ -42,10 +37,12 @@ Calculate the parameters of Gaussian speeds
 \keyword{et}
 \keyword{function}
 \keyword{in}
-\keyword{internal}
+\keyword{intaernal}
 \keyword{mean}
+\keyword{mu}
 \keyword{of}
 \keyword{refers}
+\keyword{sigma2}
 \keyword{speeds.}
 \keyword{step}
 \keyword{the}
