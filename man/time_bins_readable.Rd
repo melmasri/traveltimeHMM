@@ -13,21 +13,13 @@ time_bins_readable(t)
 a string representing time bin out of \code{MorningRush}, \code{EveningRush}, \code{EveningNight}, \code{Weekendday}, \code{Weekday}.
 }
 \description{
-A simple example of time bins function that is human readable.
+\code{time_bins_readable} converts a datetime stamp to a time bin tag
 }
 \details{
 ...
 }
 \examples{
+\dontrun{
 time_bins_readable(Sys.time())
 }
-\keyword{\code{time_bins_readable}}
-\keyword{a}
-\keyword{bin}
-\keyword{converts}
-\keyword{datetime}
-\keyword{internal}
-\keyword{stamp}
-\keyword{tag}
-\keyword{time}
-\keyword{to}
+}

@@ -148,7 +148,6 @@ time_bins_functional<-function(time_bin_readable_function = time_bins_readable ,
 }
 
 #' A simple example of time bins function that is human readable.
-#' @keywords internal
 #' 
 #' \code{time_bins_readable} converts a datetime stamp to a time bin tag
 #' 
@@ -158,7 +157,9 @@ time_bins_functional<-function(time_bin_readable_function = time_bins_readable ,
 #' @return a string representing time bin out of \code{MorningRush}, \code{EveningRush}, \code{EveningNight}, \code{Weekendday}, \code{Weekday}.
 #' 
 #' @examples
+#' \dontrun{
 #' time_bins_readable(Sys.time())
+#' }
 #' @export
 time_bins_readable <- function(t){
     # A humanly readable function that returns bins of time
@@ -181,4 +182,15 @@ time_bins_readable <- function(t){
     })
 }
 
+
+#' A mapping from real time to time bins
+#' 
+#' \code{time_bins} transforms a real time to a time bin
+#' 
+#' @param t A real time `POSIXlt` time stamp
+#'
+#' @details ...
+#' @return A string as a time bin
+#' 
+#' @export
 time_bins <- time_bins_functional()

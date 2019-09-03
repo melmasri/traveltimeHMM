@@ -145,8 +145,8 @@ traveltimeHMM(logspeeds = NULL,
               max.speed = NULL,
               seed = NULL,
               tmat.p = NULL,
-              init.p = NULL,
-              debug = FALSE)
+              init.p = NULL)
+              
 ```
 
 `traveltimeHMM` can be called either using *explicit parameters* or using a *composite object* incorporating the main parameters, for example, a `data.frame`.
@@ -333,11 +333,10 @@ Our example involves predicting the travel time for trip ID 2700 from the origin
 
 ```{r eval=FALSE}
 # Extracting link traversal data for trip ID 2700.
-Link traversal order is preserved.
+# Link traversal order is preserved.
 single_trip <- subset(tripset, tripID==2700)
 
-pred <- predict(object = fit,
-               tripdata = single_trip,
+pred <- predict(object = fit, tripdata = single_trip,
                starttime = single_trip$time[1],
                n = 1000)
 ```
@@ -465,12 +464,27 @@ head(tripset)
 
 ## Prediction with new time bins
 
-The estimation step `traveltimeHMM` does not utilize the new functional `time_bins()`, however in the prediction stage, `predict` requires input of the proper time bin functional. This can be seen by the arguments of `predict` as
+The estimation step `traveltimeHMM` does not utilize the new functional `time_bins()`, however in the prediction stage, predict requires input of the proper time bin functional. This can be seen by the arguments of `predict` as
 
 ```{r eval=FALSE}
 predict(object, data, starttime = Sys.time(),  n=1000, time_bins.fun = time_bins, ...)
 ```
-where the argument `time_bins.fun = time_bins` is already specified to the default `time_bins()` functional. Hence, in prediction under a new time bin categories, the constructed functional must be passed as `time_bins.fun`.
+where the argument `time_bins.fun = time_bins` is already specified to the default `time_bins()` functional. Hence, in prediction under a new time bin categories, the constructed functional must be passed as `time_bins.fun.
+
+In the above example this would require refitting the data and re-predicting as
+
+```{r eval=FALSE}
+fit <- traveltimeHMM(data = tripset,nQ = 2,max.it = 20, model = "HMM")
+#> Model HMM with 4914 trips over 13235 roads and 3 time bins...
+#> Expected completion of 20 iterations in 116 secs
+#> Reached maximum number of iterations
+
+
+pred <- predict(object = fit, tripdata = single_trip, 
+                starttime = single_trip$time[1],
+                n = 1000, time_bins.fun = time_bins)
+hist(pred, freq=FALSE)
+```
 
 # References
 

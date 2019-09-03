@@ -4,7 +4,8 @@
 \alias{predict.traveltime.HMM}
 \title{Predict the travel time for a trip using a \code{traveltimeHMM} model object of the HMM family}
 \usage{
-\method{predict}{traveltime.HMM}(object, tripdata, starttime, n, logE, ...)
+\method{predict}{traveltime.HMM}(object, tripdata, starttime, n, logE,
+  time_bins = time_bins, ...)
 }
 \arguments{
 \item{object}{A model object (a list) provided through the execution of
@@ -21,6 +22,8 @@ and the latter must have the same length.  Rows must be in chronological order.}
 \item{n}{Number of samples. Default is 1000.}
 
 \item{logE}{Point estimate of trip effects, in the form of a numerical vector of size \code{n}.}
+
+\item{time_bins}{a functional map between real time and time bins, see `?rules2timebins`.}
 
 \item{...}{not used.}
 }

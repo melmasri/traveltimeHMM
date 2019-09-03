@@ -20,7 +20,9 @@ A matrix of dimensions \code{m X n} with each row summing up to 1.
 Normalize each row of a matrix by the sum of its elements
 }
 \examples{
+\dontrun{
 normalizeR(matrix(c(1,2,3,4), nrow=2, ncol = 2), 2, 2)
+}
 }
 \keyword{Function}
 \keyword{\code{normalizeR}}

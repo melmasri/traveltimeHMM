@@ -16,9 +16,8 @@ A vector of dimension \code{n} with  its elements summing up to 1.
 Normalize a vector by the sum of its elements
 }
 \examples{
-normalizeV(c(1,3))
-
 \dontrun{
+normalizeV(c(1,3))
 normalizeV(matrix(c(1,2,3,4), nrow=2, ncol = 2), 2, 2)
 }
 }

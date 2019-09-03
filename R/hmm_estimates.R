@@ -14,9 +14,11 @@
 #' @return An \code{m x Q} matrix of probabilites for the m levels of \code{by_factor}.
 #' 
 #' @examples
+#' \dontrun{
 #' x = runif(10)
 #' x = cbind(x, 1-x)
 #' initial_est(x, factor(sample(c("A", "B"), 10, replace=TRUE)))
+#' }
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export

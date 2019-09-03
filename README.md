@@ -51,7 +51,7 @@ To fit a simple `HMM` model use the following code
 fit <- traveltimeHMM(data = tripset,nQ = 2,max.it = 20, model = "HMM")
 ```
 
-Predict for a single with:
+Predict for a single trip with:
 
 ``` r
 single_trip <- subset(tripset, tripID==2700)
@@ -59,7 +59,7 @@ pred <- predict(object = fit,
                tripdata = single_trip,
                starttime = single_trip$time[1],
                n = 1000)
-hist(pred)
+hist(pred, freq = FALSE)
 ```
 
 ## Bugs

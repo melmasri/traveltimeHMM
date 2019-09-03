@@ -5,7 +5,7 @@
 \title{Predict the travel time for a trip using a \code{traveltimeHMM} model object}
 \usage{
 \method{predict}{traveltime}(object, tripdata, starttime = Sys.time(),
-  n = 1000, logE = NULL, ...)
+  n = 1000, logE = NULL, time_bins.fun = time_bins, ...)
 }
 \arguments{
 \item{object}{A model object (a list) provided through the execution of function \code{timetravelHMM}.
@@ -28,6 +28,8 @@ If a single numerical value is supplied, it will be replicated into a vector.  I
 the function will use either a vector of simulated values (if the model is from the \code{trip} family),
 or a vector of \code{0} otherwise.  Default is \code{NULL}.  NOTE: when simulating values for the
 vector, the value for \eqn{\tau} is taken from the model object.}
+
+\item{time_bins.fun}{A functional to map real time to specified time bins, see `?rules2timebins`.}
 
 \item{...}{not used.}
 }

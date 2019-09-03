@@ -10,9 +10,8 @@ NULL
 #' @param x  A vector of dimension \code{n}. 
 #' @return A vector of dimension \code{n} with  its elements summing up to 1.
 #' @examples
-#' normalizeV(c(1,3))
-#' 
 #' \dontrun{
+#' normalizeV(c(1,3))
 #' normalizeV(matrix(c(1,2,3,4), nrow=2, ncol = 2), 2, 2)
 #' }
 #' @export
@@ -31,7 +30,9 @@ normalizeV <- function(x) {
 #' @param n The number of columns of the matrix.
 #' @return A matrix of dimensions \code{m X n} with each row summing up to 1.
 #' @examples
+#' \dontrun{
 #' normalizeR(matrix(c(1,2,3,4), nrow=2, ncol = 2), 2, 2)
+#' }
 #' @export
 normalizeR <- function(x, m, n) x/.rowSums(x, m, n)  
 

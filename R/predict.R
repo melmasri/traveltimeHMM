@@ -24,6 +24,7 @@
 #'   the function will use either a vector of simulated values (if the model is from the \code{trip} family),
 #'   or a vector of \code{0} otherwise.  Default is \code{NULL}.  NOTE: when simulating values for the
 #'   vector, the value for \eqn{\tau} is taken from the model object.
+#' @param time_bins.fun A functional to map real time to specified time bins, see `?rules2timebins`.
 #' @param ... not used.
 #'
 #' @return \code{predict.traveltime} returns a numerical vector of size \code{n} representing the point prediction of total travel time, in seconds, for each run.
@@ -52,7 +53,7 @@
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-predict.traveltime<-function(object, tripdata, starttime = Sys.time(),  n = 1000, logE = NULL, ... ){
+predict.traveltime<-function(object, tripdata, starttime = Sys.time(),  n = 1000, logE = NULL,time_bins.fun = time_bins, ... ){
   
     # We first perform basic checks.  'tripdata' must be a list, data frame or data table
     # that minimally includes objects 'linkID' and 'length', the latter having
@@ -68,9 +69,9 @@ predict.traveltime<-function(object, tripdata, starttime = Sys.time(),  n = 1000
     # whilst others are handled by function 'predict.traveltime.no_dependence'
     # (both functions are below).
     if(grepl('HMM', object$model))
-      predict.traveltime.HMM(object, tripdata, starttime, n, logE)
+      predict.traveltime.HMM(object, tripdata, starttime, n, logE, time_bins = time_bins.fun, ...)
     else
-      predict.traveltime.no_dependence(object, tripdata , starttime, n, logE)
+      predict.traveltime.no_dependence(object, tripdata , starttime, n, logE, time_bins = time_bins.fun, ...)
 }
 
 #' Predict the travel time for a trip using a \code{traveltimeHMM} model object that is not of the HMM family
@@ -91,6 +92,7 @@ predict.traveltime<-function(object, tripdata, starttime = Sys.time(),  n = 1000
 #' @param starttime The start date and time for the very first link of the trip, in POSIXct format.
 #' @param n Number of samples. Default is 1000.
 #' @param logE Point estimate of trip effects, in the form of a numerical vector of size \code{n}.
+#' @param time_bins a functional map between real time and time bins, see `?rules2timebins`.
 #' @param ... not used.
 #' 
 #' @return \code{predict.traveltime.no_dependence} returns a vector of size \code{n} of representing the point prediction of total travel time, in seconds, for each run.
@@ -99,7 +101,7 @@ predict.traveltime<-function(object, tripdata, starttime = Sys.time(),  n = 1000
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-predict.traveltime.no_dependence <- function(object, tripdata, starttime, n = 1000, logE = NULL, ...) {
+predict.traveltime.no_dependence <- function(object, tripdata, starttime, n = 1000, logE = NULL, time_bins = time_bins, ...) {
     linkIds = tripdata$linkID # Contains IDs of all links for a given trip
     len = tripdata$length # Contains the length (in km) of each link in 'linkIds'
     logE <- getValidE(object, logE, n) # Get a valid vector for 'logE'; see comments in function for details.
@@ -156,6 +158,7 @@ predict.traveltime.no_dependence <- function(object, tripdata, starttime, n = 10
 #' @param starttime The start date and time for the very first link of the trip, in POSIXct format.
 #' @param n Number of samples. Default is 1000.
 #' @param logE Point estimate of trip effects, in the form of a numerical vector of size \code{n}.
+#' @param time_bins a functional map between real time and time bins, see `?rules2timebins`.
 #' @param ... not used.
 #' 
 #' @return \code{predict.traveltime.HMM} returns a vector of size \code{n} of representing the point prediction of total travel time, in seconds, for each run.
@@ -164,7 +167,7 @@ predict.traveltime.no_dependence <- function(object, tripdata, starttime, n = 10
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-predict.traveltime.HMM <- function(object, tripdata, starttime, n, logE, ...) {
+predict.traveltime.HMM <- function(object, tripdata, starttime, n, logE, time_bins = time_bins, ...) {
     linkIds = tripdata$linkID # Contains IDs of all links for a given trip
     len = tripdata$length # Contains the length (in km) of each link in 'linkIds'
     logE <- getValidE(object, logE, n) # Get a valid vector for 'logE'; see comments in function for details.
