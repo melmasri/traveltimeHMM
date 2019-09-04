@@ -66,3 +66,10 @@ hist(pred, freq = FALSE)
 
 This is a work in progress. For bugs and features, please refer to
 [here](https://github.com/melmasri/traveltimeHMM/issues).
+
+## References
+
+Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E.,
+2017. “Predicting travel time reliability using mobile phone GPS data”.
+*Transportation Research Part C*, 75, 30-44.
+<http://dx.doi.org/10.1016/j.trc.2016.10.011>
