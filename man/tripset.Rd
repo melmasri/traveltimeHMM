@@ -4,7 +4,8 @@
 \name{tripset}
 \alias{tripset}
 \title{A sample of 4914 trips over Quebec City in 2014}
-\format{A data frame with 322799 rows and 7 variables:
+\format{
+A data frame with 322799 rows and 7 variables:
 \describe{
   \item{tripID}{a numeric unique trip ID}
   \item{linkID}{a numeric ID representing differet road links}
@@ -13,7 +14,8 @@
   \item{traveltime}{the travel time of corresponding trip on the specified linkId in seconds}
   \item{length}{the trip driving length in meters over the corresponding linkId}
   \item{time}{the first observed GPS timestamp on the corresponding linkId of that trip}
-}}
+}
+}
 \usage{
 tripset
 }

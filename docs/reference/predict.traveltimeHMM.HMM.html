@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Function reference • traveltimeHMM</title>
+<title>Predict the travel time for a trip using a <code>traveltimeHMM</code> model object of the HMM family — predict.traveltimeHMM.HMM • traveltimeHMM</title>
 
 
 <!-- jquery -->
@@ -33,7 +33,9 @@
 
 
 
-<meta property="og:title" content="Function reference" />
+<meta property="og:title" content="Predict the travel time for a trip using a <code>traveltimeHMM</code> model object of the HMM family — predict.traveltimeHMM.HMM" />
+<meta property="og:description" content="Predict the travel time for a trip using a traveltimeHMM model object of the HMM family" />
+<meta name="twitter:card" content="summary" />
 
 
 
@@ -51,7 +53,7 @@
   </head>
 
   <body>
-    <div class="container template-reference-index">
+    <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -100,78 +102,74 @@
       </header>
 
 <div class="row">
-  <div class="contents col-md-9">
+  <div class="col-md-9 contents">
     <div class="page-header">
-      <h1>Reference</h1>
+    <h1>Predict the travel time for a trip using a <code>traveltimeHMM</code> model object of the HMM family</h1>
+    <small class="dont-index">Source: <a href='https://github.com/melmasri/traveltimeHMM/blob/master/R/predict.R'><code>R/predict.R</code></a></small>
+    <div class="hidden name"><code>predict.traveltimeHMM.HMM.Rd</code></div>
     </div>
 
-    <table class="ref-index">
+    <div class="ref-description">
+    <p>Predict the travel time for a trip using a <code>traveltimeHMM</code> model object of the HMM family</p>
+    </div>
 
-    <colgroup>
-      
-      <col class="alias" />
-      <col class="title" />
-    </colgroup>
+    <pre class="usage"><span class='co'># S3 method for traveltimeHMM.HMM</span>
+<span class='fu'><a href='https://www.rdocumentation.org/packages/stats/topics/predict'>predict</a></span>(<span class='no'>object</span>, <span class='no'>tripdata</span>, <span class='no'>starttime</span>, <span class='no'>n</span>, <span class='no'>logE</span>, <span class='kw'>time_bins</span> <span class='kw'>=</span> <span class='no'>time_bins</span>, <span class='no'>...</span>)</pre>
 
-    <tbody>
-      <tr>
-        <th colspan="2">
-          <h2 id="section-all-functions" class="hasAnchor"><a href="#section-all-functions" class="anchor"></a>All functions</h2>
-          <p class="section-desc"></p>
-        </th>
-      </tr>
-      <tr>
-        
-        <td>
-          <p><code><a href="gaussian_param_by_factor.html">gaussian_param_by_factor()</a></code> </p>
-        </td>
-        <td><p>Calculate the parameters of Gaussian speeds</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="misc.html">misc</a></code> </p>
-        </td>
-        <td><p>Miscellaneous functions for package traveltimeHMM</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="predict.traveltimeHMM.html">predict(<i>&lt;traveltimeHMM&gt;</i>)</a></code> </p>
-        </td>
-        <td><p>Predict the travel time for a trip using a <code>traveltimeHMM</code> model object</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="time_bins.html">time_bins()</a></code> </p>
-        </td>
-        <td><p>A mapping from real time to time bins</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="time_bins_readable.html">time_bins_readable()</a></code> </p>
-        </td>
-        <td><p>A simple example of time bins function that is human readable.</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="traveltimeHMM.html">traveltimeHMM()</a></code> </p>
-        </td>
-        <td><p>Estimate trip- and link- specific speed parameters from observed average speeds</p></td>
-      </tr><tr>
-        
-        <td>
-          <p><code><a href="tripset.html">tripset</a></code> </p>
-        </td>
-        <td><p>A sample of 4914 trips over Quebec City in 2014</p></td>
-      </tr>
-    </tbody>
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>object</th>
+      <td><p>A model object (a list) provided through the execution of
+function <code>timetravelHMM</code> for a <code>trip-HMM</code> or <code>HMM</code> model type.
+The list includes information on model as well as estimates
+for its parameters.  See <code>timetravelHMM</code> man page.</p></td>
+    </tr>
+    <tr>
+      <th>tripdata</th>
+      <td><p>A data frame of road links with information on each
+link's traversal.  Columns minimally includes objects 'linkID' and 'length',
+and the latter must have the same length.  Rows must be in chronological order.</p></td>
+    </tr>
+    <tr>
+      <th>starttime</th>
+      <td><p>The start date and time for the very first link of the trip, in POSIXct format.</p></td>
+    </tr>
+    <tr>
+      <th>n</th>
+      <td><p>Number of samples. Default is 1000.</p></td>
+    </tr>
+    <tr>
+      <th>logE</th>
+      <td><p>Point estimate of trip effects, in the form of a numerical vector of size <code>n</code>.</p></td>
+    </tr>
+    <tr>
+      <th>time_bins</th>
+      <td><p>a functional map between real time and time bins, see `?rules2timebins`.</p></td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td><p>not used.</p></td>
+    </tr>
     </table>
-  </div>
 
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p><code>predict.traveltimeHMM.HMM</code> returns a vector of size <code>n</code> of representing the point prediction of total travel time, in seconds, for each run.</p>
+    <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
+
+    <p>Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.</p>
+
+  </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-      <li><a href="#section-all-functions">All functions</a></li>
+      <li><a href="#arguments">Arguments</a></li>
+      <li><a href="#value">Value</a></li>
+      <li><a href="#references">References</a></li>
     </ul>
+
   </div>
 </div>
 

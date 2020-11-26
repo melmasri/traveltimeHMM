@@ -26,7 +26,7 @@ BugReports: https://github.com/melmasri/traveltimeHMM/issues
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.1
 Suggests:
     testthat,
     knitr,
@@ -41,4 +41,3 @@ Suggests:
     kableExtra
 VignetteBuilder: knitr
 Depends: R (>= 2.10)
-

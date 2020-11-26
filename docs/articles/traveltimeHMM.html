@@ -71,7 +71,7 @@
       <h1>Introduction to traveltimeHMM: making reliable travel time predictions on road networks</h1>
                         <h4 class="author">Mohamad Elmasri, Aurélie Labbe, Denis Larocque, Laurent Charlin and Éric Germain</h4>
             
-            <h4 class="date">2019-09-03</h4>
+            <h4 class="date">2020-11-25</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/melmasri/traveltimeHMM/blob/master/vignettes/traveltimeHMM.Rmd"><code>vignettes/traveltimeHMM.Rmd</code></a></small>
       <div class="hidden name"><code>traveltimeHMM.Rmd</code></div>
@@ -98,12 +98,12 @@
 <a class="sourceLine" id="cb1-2" title="2"><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/data">data</a></span>(tripset)</a>
 <a class="sourceLine" id="cb1-3" title="3"><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/head">head</a></span>(tripset)</a>
 <a class="sourceLine" id="cb1-4" title="4"><span class="co">#&gt;   tripID linkID timeBin logspeed traveltime    length                time</span></a>
-<a class="sourceLine" id="cb1-5" title="5"><span class="co">#&gt; 1   2700  10469 Weekday 1.692292  13.000000  70.61488 2014-04-28 03:07:27</span></a>
-<a class="sourceLine" id="cb1-6" title="6"><span class="co">#&gt; 2   2700  10444 Weekday 2.221321  18.927792 174.50487 2014-04-28 03:07:41</span></a>
-<a class="sourceLine" id="cb1-7" title="7"><span class="co">#&gt; 3   2700  10460 Weekday 2.203074   8.589937  77.76295 2014-04-28 03:07:58</span></a>
-<a class="sourceLine" id="cb1-8" title="8"><span class="co">#&gt; 4   2700  10462 Weekday 1.924290  14.619859 100.15015 2014-04-28 03:08:07</span></a>
-<a class="sourceLine" id="cb1-9" title="9"><span class="co">#&gt; 5   2700  10512 Weekday 1.804293   5.071986  30.81574 2014-04-28 03:08:21</span></a>
-<a class="sourceLine" id="cb1-10" title="10"><span class="co">#&gt; 6   2700   5890 Weekday 2.376925  31.585355 340.22893 2014-04-28 03:08:26</span></a></code></pre></div>
+<a class="sourceLine" id="cb1-5" title="5"><span class="co">#&gt; 1   2700  10469 Weekday 1.692292  13.000000  70.61488 2014-04-28 06:07:27</span></a>
+<a class="sourceLine" id="cb1-6" title="6"><span class="co">#&gt; 2   2700  10444 Weekday 2.221321  18.927792 174.50487 2014-04-28 06:07:41</span></a>
+<a class="sourceLine" id="cb1-7" title="7"><span class="co">#&gt; 3   2700  10460 Weekday 2.203074   8.589937  77.76295 2014-04-28 06:07:58</span></a>
+<a class="sourceLine" id="cb1-8" title="8"><span class="co">#&gt; 4   2700  10462 Weekday 1.924290  14.619859 100.15015 2014-04-28 06:08:07</span></a>
+<a class="sourceLine" id="cb1-9" title="9"><span class="co">#&gt; 5   2700  10512 Weekday 1.804293   5.071986  30.81574 2014-04-28 06:08:21</span></a>
+<a class="sourceLine" id="cb1-10" title="10"><span class="co">#&gt; 6   2700   5890 Weekday 2.376925  31.585355 340.22893 2014-04-28 06:08:26</span></a></code></pre></div>
 <p>Travel data is organized around the notions of <em>trips</em> and <em>links</em>. Links are road segments each with well-defined beginning and end points and which can be traversed. A vehicle performs a trip when it travels from a start point to an end point through a sequence of links. Thus trips can be considered as ordered sequences of links. <code>tripset</code> includes data for a collection of trips.</p>
 <ul>
 <li><p>Field <code>tripID</code> contains each <em>trip</em>’s ID, whereas field <code>linkID</code> contains the IDs of each <em>link</em> making up a trip. Both fields need to be numerical. It is assumed that, in the data set, all trips are grouped together and all links of a given trip appear in the order in which they are traversed (No verification is performed to that effect). A given link corresponds to some physical entity such as a road segment, a portion of a road segment, or any combination of those. Hence, it is expected that links are used in more than one trip.</p></li>

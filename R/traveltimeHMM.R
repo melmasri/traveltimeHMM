@@ -445,7 +445,7 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
                 nB = nB,
                 nObs = nObs,
                 model = model)
-    class(obj) <- append(class(obj),"traveltime", after=0)
+    class(obj) <- append(class(obj),"traveltimeHMM", after=0)
     invisible(obj)
 }
 

@@ -4,11 +4,23 @@
 \alias{traveltimeHMM}
 \title{Estimate trip- and link- specific speed parameters from observed average speeds}
 \usage{
-traveltimeHMM(logspeeds = NULL, trips = NULL, timeBins = NULL,
-  linkIds = NULL, data = NULL, nQ = 1L, model = c("HMM",
-  "trip-HMM", "trip", "no-dependence"), tol.err = 10, L = 10L,
-  max.it = 20L, verbose = FALSE, max.speed = NULL, seed = NULL,
-  tmat.p = NULL, init.p = NULL)
+traveltimeHMM(
+  logspeeds = NULL,
+  trips = NULL,
+  timeBins = NULL,
+  linkIds = NULL,
+  data = NULL,
+  nQ = 1L,
+  model = c("HMM", "trip-HMM", "trip", "no-dependence"),
+  tol.err = 10,
+  L = 10L,
+  max.it = 20L,
+  verbose = FALSE,
+  max.speed = NULL,
+  seed = NULL,
+  tmat.p = NULL,
+  init.p = NULL
+)
 }
 \arguments{
 \item{logspeeds}{A numeric vector of speed observations (in km/h) on the (natural) log-scale.  Needs

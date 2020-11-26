@@ -113,11 +113,23 @@
     <p><code>traveltimeHMM</code> estimates trip- and link- specific speed parameters from observed average speeds per unique trip and link.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>traveltimeHMM</span>(<span class='kw'>logspeeds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>trips</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>timeBins</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>linkIds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>data</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>nQ</span> <span class='kw'>=</span> <span class='fl'>1L</span>, <span class='kw'>model</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"HMM"</span>,
-  <span class='st'>"trip-HMM"</span>, <span class='st'>"trip"</span>, <span class='st'>"no-dependence"</span>), <span class='kw'>tol.err</span> <span class='kw'>=</span> <span class='fl'>10</span>, <span class='kw'>L</span> <span class='kw'>=</span> <span class='fl'>10L</span>,
-  <span class='kw'>max.it</span> <span class='kw'>=</span> <span class='fl'>20L</span>, <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>max.speed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>tmat.p</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>init.p</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
+    <pre class="usage"><span class='fu'>traveltimeHMM</span>(
+  <span class='kw'>logspeeds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>trips</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>timeBins</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>linkIds</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>data</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>nQ</span> <span class='kw'>=</span> <span class='fl'>1L</span>,
+  <span class='kw'>model</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"HMM"</span>, <span class='st'>"trip-HMM"</span>, <span class='st'>"trip"</span>, <span class='st'>"no-dependence"</span>),
+  <span class='kw'>tol.err</span> <span class='kw'>=</span> <span class='fl'>10</span>,
+  <span class='kw'>L</span> <span class='kw'>=</span> <span class='fl'>10L</span>,
+  <span class='kw'>max.it</span> <span class='kw'>=</span> <span class='fl'>20L</span>,
+  <span class='kw'>verbose</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>max.speed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>tmat.p</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>init.p</span> <span class='kw'>=</span> <span class='kw'>NULL</span>
+)</pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -238,7 +250,7 @@ of size <code>nQ</code> with elements summing to <code>1</code>.  Default is <co
 
 <span class='co'># Perform prediction - use ?predict.traveltime for details</span>
 <span class='no'>single_trip</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/subset'>subset</a></span>(<span class='no'>tripset</span>, <span class='no'>tripID</span><span class='kw'>==</span><span class='fl'>2700</span>)
-<span class='no'>pred</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='predict.traveltime.html'>predict.traveltime</a></span>(<span class='no'>fit</span>, <span class='no'>single_trip</span>,<span class='no'>single_trip</span>$<span class='no'>time</span>[<span class='fl'>1</span>])
+<span class='no'>pred</span> <span class='kw'>&lt;-</span> <span class='fu'>predict.traveltime</span>(<span class='no'>fit</span>, <span class='no'>single_trip</span>,<span class='no'>single_trip</span>$<span class='no'>time</span>[<span class='fl'>1</span>])
 <span class='fu'><a href='https://www.rdocumentation.org/packages/graphics/topics/hist'>hist</a></span>(<span class='no'>pred</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/mean'>mean</a></span>(<span class='no'>pred</span>)
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/sum'>sum</a></span>(<span class='no'>single_trip</span>$<span class='no'>traveltime</span>)

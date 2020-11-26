@@ -4,8 +4,10 @@
 \alias{time_bins_functional}
 \title{Transforms a list of rules to a functional}
 \usage{
-time_bins_functional(time_bin_readable_function = time_bins_readable,
-  period = c("hours", "minutes"))
+time_bins_functional(
+  time_bin_readable_function = time_bins_readable,
+  period = c("hours", "minutes")
+)
 }
 \arguments{
 \item{rules}{...}

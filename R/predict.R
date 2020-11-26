@@ -1,12 +1,12 @@
 #' Predict the travel time for a trip using a \code{traveltimeHMM} model object
 #' 
-#' \code{predict.traveltime} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object.
+#' \code{predict.traveltimeHMM} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object.
 #' Prediction can be performed for a single trip only.
 #' 
 #' The function begins by validating and, if required, replacing the value of the parameter \code{logE}
 #' (see explanation alongside \code{logE} in the \emph{Arguments} section).  It then transfers execution
-#' to the appropriate function according to the selected model: \code{predict.traveltime.HMM} for
-#' models of the \code{HMM} family, or \code{predict.traveltime.no_dependence} otherwise.
+#' to the appropriate function according to the selected model: \code{predict.traveltimeHMM} for
+#' models of the \code{HMM} family, or \code{predict.traveltimeHMM.no_dependence} otherwise.
 #'  
 #' @param object A model object (a list) provided through the execution of function \code{timetravelHMM}.
 #'   The list includes information on model as well as estimates for its parameters.
@@ -27,7 +27,7 @@
 #' @param time_bins.fun A functional to map real time to specified time bins, see `?rules2timebins`.
 #' @param ... not used.
 #'
-#' @return \code{predict.traveltime} returns a numerical vector of size \code{n} representing the point prediction of total travel time, in seconds, for each run.
+#' @return \code{predict.traveltimeHMM} returns a numerical vector of size \code{n} representing the point prediction of total travel time, in seconds, for each run.
 #'
 #' @examples
 #' \dontrun{
@@ -41,19 +41,19 @@
 #' single_trip <- subset(tripset, tripID==2700)
 #' 
 #' # We need to supply the time stamp of the very first link traversal (third parameter)
-#' pred <- predict.traveltime(fit, single_trip,single_trip$time[1])
+#' pred <- predict(fit, single_trip,single_trip$time[1])
 #'
 #' hist(pred)                     # histogram of prediction samples
 #' mean(pred)                     # travel time point estimate
 #' sum(single_trip$traveltime)    # observed travel time
 #' 
 #' ?traveltimeHMM      # for help on traveltimeHMM, the estimation function
-#' ?predict.traveltime # for help on predict.traveltime, the prediction function
+#' ?predict.traveltimeHMM # for help on predict.traveltimeHMM, the prediction function
 #' }
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-predict.traveltime<-function(object, tripdata, starttime = Sys.time(),  n = 1000, logE = NULL,time_bins.fun = time_bins, ... ){
+predict.traveltimeHMM<-function(object, tripdata, starttime = Sys.time(),  n = 1000, logE = NULL,time_bins.fun = time_bins, ... ){
   
     # We first perform basic checks.  'tripdata' must be a list, data frame or data table
     # that minimally includes objects 'linkID' and 'length', the latter having
@@ -66,18 +66,18 @@ predict.traveltime<-function(object, tripdata, starttime = Sys.time(),  n = 1000
       stop('length of objects do not match!')
   
     # Models of the HMM family ('HMM', 'trip-HMM') are handled by function 'predict.traveltime.HMM'
-    # whilst others are handled by function 'predict.traveltime.no_dependence'
+    # whilst others are handled by function 'predict.traveltimeHMM.no_dependence'
     # (both functions are below).
     if(grepl('HMM', object$model))
-      predict.traveltime.HMM(object, tripdata, starttime, n, logE, time_bins = time_bins.fun, ...)
+      predict.traveltimeHMM.HMM(object, tripdata, starttime, n, logE, time_bins = time_bins.fun, ...)
     else
-      predict.traveltime.no_dependence(object, tripdata , starttime, n, logE, time_bins = time_bins.fun, ...)
+      predict.traveltimeHMM.no_dependence(object, tripdata , starttime, n, logE, time_bins = time_bins.fun, ...)
 }
 
 #' Predict the travel time for a trip using a \code{traveltimeHMM} model object that is not of the HMM family
 #' @keywords internal
 #' 
-#' \code{predict.traveltime.no_dependence} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object that is not of the \code{HMM} family (see man page for \code{predict.traveltime}).
+#' \code{predict.traveltimeHMM.no_dependence} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object that is not of the \code{HMM} family (see man page for \code{predict.traveltimeHMM}).
 #' 
 #' The function implements Algorithm 2 from Woodard et al., 2017.  However, the state transition matrix
 #' and initial state probability vector are not handled as they were not generated at the estimation stage.
@@ -95,13 +95,13 @@ predict.traveltime<-function(object, tripdata, starttime = Sys.time(),  n = 1000
 #' @param time_bins a functional map between real time and time bins, see `?rules2timebins`.
 #' @param ... not used.
 #' 
-#' @return \code{predict.traveltime.no_dependence} returns a vector of size \code{n} of representing the point prediction of total travel time, in seconds, for each run.
+#' @return \code{predict.traveltimeHMM.no_dependence} returns a vector of size \code{n} of representing the point prediction of total travel time, in seconds, for each run.
 #' 
 #' @importFrom stats rnorm runif
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-predict.traveltime.no_dependence <- function(object, tripdata, starttime, n = 1000, logE = NULL, time_bins = time_bins, ...) {
+predict.traveltimeHMM.no_dependence <- function(object, tripdata, starttime, n = 1000, logE = NULL, time_bins = time_bins, ...) {
     linkIds = tripdata$linkID # Contains IDs of all links for a given trip
     len = tripdata$length # Contains the length (in km) of each link in 'linkIds'
     logE <- getValidE(object, logE, n) # Get a valid vector for 'logE'; see comments in function for details.
@@ -143,7 +143,7 @@ predict.traveltime.no_dependence <- function(object, tripdata, starttime, n = 10
 #' Predict the travel time for a trip using a \code{traveltimeHMM} model object of the HMM family
 #' @keywords internal
 #' 
-#' \code{predict.traveltime.HMM} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object of the \code{HMM} family (see man page for \code{predict.traveltime}).
+#' \code{predict.traveltime.HMM} performs a point prediction by simulation using parameter estimates provided by a \code{traveltimeHMM} model object of the \code{HMM} family (see man page for \code{predict.traveltimeHMM}).
 #' 
 #' The function implements Algorithm 2 from Woodard et al., 2017, including its handling
 #' of the state transition matrix and initial state probability vector.
@@ -161,13 +161,13 @@ predict.traveltime.no_dependence <- function(object, tripdata, starttime, n = 10
 #' @param time_bins a functional map between real time and time bins, see `?rules2timebins`.
 #' @param ... not used.
 #' 
-#' @return \code{predict.traveltime.HMM} returns a vector of size \code{n} of representing the point prediction of total travel time, in seconds, for each run.
+#' @return \code{predict.traveltimeHMM.HMM} returns a vector of size \code{n} of representing the point prediction of total travel time, in seconds, for each run.
 #' 
 #' @importFrom stats rnorm runif
 #' @references
 #' {Woodard, D., Nogin, G., Koch, P., Racz, D., Goldszmidt, M., Horvitz, E., 2017.  Predicting travel time reliability using mobile phone GPS data.  Transportation Research Part C, 75, 30-44.}
 #' @export
-predict.traveltime.HMM <- function(object, tripdata, starttime, n, logE, time_bins = time_bins, ...) {
+predict.traveltimeHMM.HMM <- function(object, tripdata, starttime, n, logE, time_bins = time_bins, ...) {
     linkIds = tripdata$linkID # Contains IDs of all links for a given trip
     len = tripdata$length # Contains the length (in km) of each link in 'linkIds'
     logE <- getValidE(object, logE, n) # Get a valid vector for 'logE'; see comments in function for details.
