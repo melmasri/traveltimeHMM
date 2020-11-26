@@ -154,10 +154,10 @@ traveltimeHMM <- function(logspeeds = NULL, trips = NULL, timeBins = NULL, linkI
     # SECTION B - Data preparation
     
     # Convert 'trips' and 'linkIds' to factors if required
-    if (!is.factor(trips)) 
-        trips = factor(trips) 
-    if (!is.factor(linkIds)) 
-        linkIds = factor(linkIds)
+    #if (!is.factor(trips)) 
+    trips = factor(trips) 
+    #if (!is.factor(linkIds)) 
+    linkIds = factor(linkIds)
 
     nB <- length(unique(timeBins))  # time bins
     nQ2 <- nQ^2 # Compute nQ2, the square of nQ, which will be used often
