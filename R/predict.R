@@ -120,6 +120,7 @@ predict.traveltimeHMM.no_dependence <- function(object, tripdata, starttime, n =
     speed = rnorm(n, object$mean[id, ], object$sd[id, ])
     tt = len[1] * exp(-speed - logE) # n-sized vector of total travel time
                                      # on first link: length * speed (adjusted for trip effect)
+    if(length(linkIds)>1)
     for (k in 2:length(linkIds)) { # Loop for each link after the first
         # Get n-sized vector of link+timebin factors
         fact = as.factor(paste(linkIds[k], time_bins(starttime + tt), sep = "."))
